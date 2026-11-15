@@ -52,6 +52,36 @@ pkill -f "server.py"
 git pull
 ```
 
+## Запуск в Docker
+
+Команды по одной строке, из папки Games:
+
+```
+docker compose up -d --build
+```
+
+Сайт откроется на `http://АДРЕС_СЕРВЕРА:8000`. Аккаунты и сохранения лежат в томе `games-data` и не пропадают при пересборке. Контейнер сам поднимается после перезагрузки сервера.
+
+Обновить игры:
+
+```
+git pull
+```
+```
+docker compose up -d --build
+```
+
+Посмотреть журнал: `docker compose logs -f`. Остановить: `docker compose down`.
+
+Если `docker compose` не найден, то же без compose:
+
+```
+docker build -t games .
+```
+```
+docker run -d --name games --restart unless-stopped -p 8000:8000 -v games-data:/data games
+```
+
 ## Аккаунты и сохранения
 
 - Регистрация и вход — кнопка «Войти» в правом верхнем углу меню.

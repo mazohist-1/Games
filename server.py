@@ -22,7 +22,7 @@ from http import cookies
 from urllib.parse import urlparse, unquote
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(ROOT, "data")
+DATA_DIR = os.environ.get("GAMES_DATA") or os.path.join(ROOT, "data")
 DB_PATH = os.path.join(DATA_DIR, "games.db")
 COOKIE = "gh_session"
 SESSION_DAYS = 60

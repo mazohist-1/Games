@@ -1,0 +1,12 @@
+services:
+  games:
+    build: .
+    container_name: games
+    ports:
+      - "8000:8000"
+    volumes:
+      - games-data:/data
+    restart: unless-stopped
+
+volumes:
+  games-data:
