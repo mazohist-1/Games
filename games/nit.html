@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<style>html,body{margin:0;padding:0}[hidden]{display:none!important}</style>
+<script src="../assets/hub.js" data-home></script>
+<title>Нить</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Макет: полноэкранный 3D-вид, поверх него тонкие панели HUD; меню — тёмный лист с золотой нитью. Один тёмный образ для обеих тем. */
+:root{
+  --bg:#0b0d12; --panel:rgba(14,17,25,.88); --panel-solid:#121621; --ink:#eef0f6; --muted:#8e96ab; --line:rgba(255,255,255,.12);
+  --thread:#f3c24f; --thread-ink:#1b1505; --red:#ff5468; --blue:#4f8dff; --good:#52d39a;
+  --k0:#ffd34d; --k1:#45e0c9; --k2:#ff7ad9;
+  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-user-select:none;user-select:none;touch-action:none}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--thread);outline-offset:2px}
+#view{position:fixed;inset:0}
+#view canvas{display:block;width:100%;height:100%}
+.layer{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-bottom,0px));z-index:20}
+.dim{background:rgba(6,8,12,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:min(560px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;line-height:1.1;text-wrap:balance}
+h2{font-size:22px}
+.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.btn{border-radius:10px;padding:12px 18px;font-weight:700;background:var(--thread);color:var(--thread-ink);text-align:center}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:hover{filter:brightness(1.08)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>.btn{flex:1 1 140px}
+.row>.btn.ghost#lvBack{flex:none}
+.muted{color:var(--muted)}
+/* меню */
+#menu .title{display:flex;flex-direction:column;gap:6px}
+#menu h1{font-size:clamp(56px,14vw,96px);font-weight:900;letter-spacing:.04em;line-height:.95}
+#menu h1 span{color:var(--thread)}
+.threadline{height:2px;background:linear-gradient(90deg,var(--thread),transparent);border-radius:2px;width:100%;transform-origin:left;animation:draw 1.6s ease-out both}
+@keyframes draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.threadline{animation:none}}
+.menu-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.menu-btns .btn:first-child{grid-column:1/-1;font-size:17px;padding:15px}
+.stat{font-variant-numeric:tabular-nums}
+/* уровни */
+#levels .card{width:min(820px,100%)}
+.world{display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.world-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.world-h h3{font-size:15px}
+.world-h .muted{font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+@media (max-width:560px){.tiles{grid-template-columns:repeat(5,1fr)}}
+.tile{aspect-ratio:1;max-width:100%;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-variant-numeric:tabular-nums}
+.tile .st{font-size:9px;letter-spacing:1px;color:var(--thread);min-height:11px}
+.tile.locked{opacity:.32;cursor:not-allowed}
+.tile.cur{border-color:var(--thread);box-shadow:inset 0 0 0 1px var(--thread)}
+/* настройки */
+.set{display:grid;grid-template-columns:1fr auto;gap:12px 16px;align-items:center}
+.set label{font-weight:600}
+.set output{font-variant-numeric:tabular-nums;color:var(--thread);min-width:48px;text-align:right;display:inline-block}
+.set input[type=range]{width:min(220px,46vw);accent-color:var(--thread)}
+.toggle{width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,.14);position:relative}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--ink);transition:transform .15s}
+.toggle[aria-pressed=true]{background:var(--thread)}
+.toggle[aria-pressed=true]::after{transform:translateX(20px);background:var(--thread-ink)}
+.help-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.help-list li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.sw{width:22px;height:22px;border-radius:6px;margin-top:1px}
+kbd{font-family:inherit;font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;background:rgba(255,255,255,.05)}
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+.hud-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;
+  padding-top:max(10px,env(safe-area-inset-top,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 11px;display:flex;align-items:center;gap:10px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill small{font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.hud-l,.hud-r{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.hud-r{align-items:flex-end}
+.keys{display:flex;gap:5px}
+.keys i{width:13px;height:13px;border-radius:50%;border:2px solid currentColor;opacity:.35;display:block}
+.keys i.on{opacity:1;background:currentColor}
+.gatest{display:flex;gap:4px;align-items:center}
+.gatest b{width:12px;height:12px;border-radius:3px;display:block}
+.hud-btns{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:max(12px,env(safe-area-inset-bottom,0px));display:flex;gap:8px;pointer-events:auto}
+.hb{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-weight:700;font-size:13px}
+.hb:hover{border-color:var(--thread)}
+#mini{position:absolute;left:max(12px,env(safe-area-inset-left,0px));bottom:max(12px,env(safe-area-inset-bottom,0px));border-radius:10px;border:1px solid var(--line);background:rgba(10,12,18,.8);width:150px;height:150px}
+#toast{position:absolute;top:max(64px,calc(env(safe-area-inset-top,0px) + 54px));left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-weight:600;max-width:min(90vw,460px);text-align:center;opacity:0;transition:opacity .25s}
+#toast.show{opacity:1}
+#cross{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:rgba(255,255,255,.55)}
+#keyshint{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:12px;color:var(--muted);background:var(--panel);border-radius:8px;padding:5px 10px;white-space:nowrap}
+#joy{position:absolute;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);pointer-events:none}
+#joy b{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(243,194,79,.55)}
+#bigmap{width:min(92vmin,640px);height:min(92vmin,640px);max-width:100%;border-radius:12px;background:#0a0c12;border:1px solid var(--line)}
+.stars{font-size:38px;letter-spacing:6px;color:var(--thread)}
+.stars .off{color:rgba(255,255,255,.18)}
+.res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.res div{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:2px}
+.res b{font-size:18px;font-variant-numeric:tabular-nums}
+.tipicon{display:flex;gap:8px}
+@media (max-width:520px){.pill small{display:none}#hGatePill small{display:none}#toast{top:max(112px,calc(env(safe-area-inset-top,0px) + 104px))}.hb{padding:8px 9px;font-size:12px}#mini{width:112px;height:112px}.pill{padding:6px 9px;gap:8px}}
+</style>
+
+<div id="view"></div>
+
+<div id="hud" hidden>
+  <div class="hud-top">
+    <div class="hud-l">
+      <div class="pill"><small id="hWorld">Сад</small><span id="hLevel">1</span></div>
+      <div class="pill"><span id="hTime">0:00</span><small id="hPar">цель 0:30</small></div>
+    </div>
+    <div class="hud-r">
+      <div class="pill" id="hSparkPill"><span style="color:var(--thread)">✦</span><span id="hSparks">0/0</span></div>
+      <div class="pill" id="hKeysPill"><small>ключи</small><span class="keys" id="hKeys"></span></div>
+      <div class="pill" id="hGatePill"><small>подняты</small><span class="gatest" id="hGate"></span></div>
+    </div>
+  </div>
+  <div id="cross"></div>
+  <div id="toast"></div>
+  <canvas id="mini" width="300" height="300"></canvas>
+  <div id="keyshint"><kbd>WASD</kbd> ход · мышь / <kbd>←</kbd><kbd>→</kbd> поворот · <kbd>M</kbd> карта · <kbd>H</kbd> подсказка</div>
+  <div id="joy" hidden><b></b></div>
+  <div class="hud-btns">
+    <button class="hb" id="bHint" type="button">Подсказка</button>
+    <button class="hb" id="bMap" type="button">Карта</button>
+    <button class="hb" id="bPause" type="button" aria-label="Пауза">❚❚</button>
+  </div>
+</div>
+
+<section id="menu" class="layer">
+  <div class="card" style="width:min(480px,100%)">
+    <div class="title">
+      <div class="eyebrow">3D-лабиринт · 60 уровней</div>
+      <h1>НИ<span>Т</span>Ь</h1>
+      <div class="threadline"></div>
+      <p class="muted" style="margin:0">За тобой по полу тянется золотая нить. Найди выход, собери огни, подбери ключи к дверям, переключай решётки и шагай в порталы.</p>
+    </div>
+    <div class="menu-btns">
+      <button class="btn" id="mPlay" type="button">Играть</button>
+      <button class="btn ghost" id="mLevels" type="button">Уровни</button>
+      <button class="btn ghost" id="mSettings" type="button">Настройки</button>
+      <button class="btn ghost" id="mHelp" type="button" style="grid-column:1/-1">Как играть</button>
+    </div>
+    <div class="row muted stat" style="justify-content:space-between;font-size:13px"><span id="mProgress">Пройдено 0 из 60</span><span id="mStars">✦ 0 / 180</span></div>
+  </div>
+</section>
+
+<section id="levels" class="layer dim" hidden>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2>Уровни</h2><button class="btn ghost" id="lvBack" type="button">Назад</button></div>
+    <div id="worlds" style="display:flex;flex-direction:column;gap:14px"></div>
+  </div>
+</section>
+
+<section id="settings" class="layer dim" hidden>
+  <div class="card">
+    <h2>Настройки</h2>
+    <div class="set">
+      <label for="sSpeed">Скорость ходьбы</label><span><output id="oSpeed">×1</output></span>
+      <input id="sSpeed" type="range" min="0.5" max="2" step="0.25" value="1" style="grid-column:1/-1;width:100%">
+      <label for="sSens">Чувствительность поворота</label><span><output id="oSens">×1</output></span>
+      <input id="sSens" type="range" min="0.4" max="2.5" step="0.1" value="1" style="grid-column:1/-1;width:100%">
+      <label for="tMini">Мини-карта</label><button class="toggle" id="tMini" type="button" aria-pressed="true" aria-label="Мини-карта"></button>
+      <label for="tThread">Нить на полу</label><button class="toggle" id="tThread" type="button" aria-pressed="true" aria-label="Нить на полу"></button>
+      <label for="tSound">Звук</label><button class="toggle" id="tSound" type="button" aria-pressed="true" aria-label="Звук"></button>
+      <label for="tQuality">Высокое качество</label><button class="toggle" id="tQuality" type="button" aria-pressed="true" aria-label="Высокое качество"></button>
+    </div>
+    <p class="muted" style="margin:0;font-size:13px">Цель по времени считается от выбранной скорости, так что медленная ходьба звёзд не отнимает.</p>
+    <button class="btn" id="setBack" type="button">Готово</button>
+  </div>
+</section>
+
+<section id="help" class="layer dim" hidden>
+  <div class="card">
+    <h2>Как играть</h2>
+    <ul class="help-list">
+      <li><span class="sw" style="background:var(--thread)"></span><span><b>Выход</b> — светящаяся арка. Пока не собраны все огни <b style="color:var(--thread)">✦</b>, она закрыта.</span></li>
+      <li><span class="sw" style="background:linear-gradient(135deg,var(--k0) 33%,var(--k1) 33% 66%,var(--k2) 66%)"></span><span><b>Ключи и двери.</b> Ключ открывает все двери своего цвета сразу.</span></li>
+      <li><span class="sw" style="background:linear-gradient(90deg,var(--red) 50%,var(--blue) 50%)"></span><span><b>Плита-переключатель.</b> Наступи на неё — красные решётки опустятся, синие поднимутся, и наоборот.</span></li>
+      <li><span class="sw" style="background:radial-gradient(circle,#b98cff 30%,#3b2b6b 70%)"></span><span><b>Портал.</b> Войди в кольцо — окажешься у кольца того же цвета. Шагни обратно — вернёшься.</span></li>
+      <li><span class="sw" style="background:#333;border:1px solid var(--line)"></span><span><b>Тьма</b> в Обсидиане: видно только то, что освещает фонарь.</span></li>
+    </ul>
+    <p class="muted" style="margin:0;font-size:13px"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> или стрелки — ход, мышь — поворот (щелчок по экрану захватывает курсор), <kbd>M</kbd> — большая карта, <kbd>H</kbd> — подсказка, <kbd>R</kbd> — заново, <kbd>Esc</kbd> — пауза. На телефоне: левая половина экрана — джойстик, правая — поворот.</p>
+    <p class="muted" style="margin:0;font-size:13px">Звёзды: три — уложиться в цель по времени, две — в полторы цели с хвостиком. Подсказка показывает дорогу на несколько шагов, но после неё больше двух звёзд не получить.</p>
+    <button class="btn" id="helpBack" type="button">Понятно</button>
+  </div>
+</section>
+
+<section id="tip" class="layer dim" hidden>
+  <div class="card" style="width:min(460px,100%)">
+    <div class="eyebrow" id="tipEyebrow">Новое</div>
+    <h2 id="tipTitle"></h2>
+    <p id="tipText" style="margin:0"></p>
+    <button class="btn" id="tipGo" type="button">Вперёд</button>
+  </div>
+</section>
+
+<section id="pause" class="layer dim" hidden>
+  <div class="card" style="width:min(420px,100%)">
+    <div class="eyebrow" id="pEyebrow">Пауза</div>
+    <h2 id="pTitle">Уровень 1</h2>
+    <div class="row"><button class="btn" id="pResume" type="button">Продолжить</button></div>
+    <div class="row">
+      <button class="btn ghost" id="pRestart" type="button">Заново</button>
+      <button class="btn ghost" id="pSettings" type="button">Настройки</button>
+    </div>
+    <div class="row"><button class="btn ghost" id="pMenu" type="button">В меню</button></div>
+  </div>
+</section>
+
+<section id="mapview" class="layer dim" hidden>
+  <div style="display:flex;flex-direction:column;gap:10px;align-items:center;max-width:100%">
+    <canvas id="bigmap" width="1000" height="1000"></canvas>
+    <button class="btn ghost" id="mapClose" type="button">Закрыть карту</button>
+  </div>
+</section>
+
+<section id="win" class="layer dim" hidden>
+  <div class="card" style="width:min(440px,100%)">
+    <div class="eyebrow" id="wEyebrow">Уровень пройден</div>
+    <h2 id="wTitle">Выход найден</h2>
+    <div class="stars" id="wStars"></div>
+    <div class="res">
+      <div><small class="muted">время</small><b id="wTime">0:00</b></div>
+      <div><small class="muted">цель</small><b id="wPar">0:00</b></div>
+      <div><small class="muted">рекорд</small><b id="wBest">0:00</b></div>
+    </div>
+    <p class="muted" id="wNote" style="margin:0;font-size:13px"></p>
+    <div class="row"><button class="btn" id="wNext" type="button">Следующий</button></div>
+    <div class="row"><button class="btn ghost" id="wAgain" type="button">Ещё раз</button><button class="btn ghost" id="wMenu" type="button">Уровни</button></div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ===== Генератор уровней «Нити» (детерминированный, с проверкой решателем) =====
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const LEVEL_COUNT=60;
+// коды предметов в клетках
+const IT_SPARK=1, IT_KEY=10, IT_LEVER=20, IT_PORTAL=30;
+// коды рёбер: 0 стена, 1 проход, 10..12 дверь цвета c, 20 красная решётка, 21 синяя решётка
+const E_WALL=0, E_OPEN=1, E_DOOR=10, E_RED=20, E_BLUE=21;
+
+function levelCfg(L){
+  const w=Math.floor((L-1)/10), i=(L-1)%10;
+  const W=Math.min(25,5+Math.floor((L-1)*0.33)+(w>=4?1:0));
+  const H=Math.max(5,W-(i%3));
+  const sparksTbl=[[0,0,0,1,2,2,3,3,4,4]];
+  const c={L,w,i,W,H,braid:[0.04,0.08,0.1,0.12,0.1,0.14][w],doors:0,gates:0,cuts:0,decoyGates:0,decoyPortals:0,sparks:0,dark:w===4};
+  if(w===0){c.sparks=sparksTbl[0][i];}
+  if(w===1){c.doors=[1,1,1,2,2,2,2,3,3,3][i];c.sparks=1+Math.floor(i/4);}
+  if(w===2){c.gates=i<4?1:i<8?2:3;c.doors=i>=5?1:0;c.decoyGates=2+i;c.sparks=1+Math.floor(i/4);}
+  if(w===3){c.cuts=i<5?1:2;c.doors=i>=3?1:0;c.gates=i>=6?1:0;c.decoyGates=c.gates?3+i:0;c.decoyPortals=i>=7?1:0;c.sparks=1+Math.floor(i/4);}
+  if(w===4){c.doors=1+(i>=5?1:0);c.gates=1;c.decoyGates=3+i;c.cuts=i>=3?1:0;c.sparks=2+Math.floor(i/4);}
+  if(w===5){c.doors=2+(i>=5?1:0);c.gates=2;c.decoyGates=5+i;c.cuts=1+(i>=5?1:0);c.decoyPortals=1;c.sparks=3+Math.floor(i/4);}
+  return c;
+}
+
+function makeGrid(W,H){
+  const N=W*H;
+  const g={W,H,N,eh:new Int8Array(N),ev:new Int8Array(N)};
+  return g;
+}
+function nbr(g,c,d){const W=g.W,x=c%W,y=(c/W)|0;
+  if(d===0)return x<g.W-1?c+1:-1; if(d===1)return y<g.H-1?c+W:-1; if(d===2)return x>0?c-1:-1; return y>0?c-W:-1;}
+function getE(g,c,d){if(d===0)return g.eh[c];if(d===1)return g.ev[c];if(d===2)return g.eh[c-1];return g.ev[c-g.W];}
+function setE(g,c,d,v){if(d===0)g.eh[c]=v;else if(d===1)g.ev[c]=v;else if(d===2)g.eh[c-1]=v;else g.ev[c-g.W]=v;}
+function ekey(g,c,d){if(d===2)return (c-1)*2;if(d===3)return (c-g.W)*2+1;return c*2+d;}
+function edgePass(e,keys,tog){
+  if(e===1)return true; if(e===0)return false;
+  if(e>=10&&e<13)return (keys>>(e-10))&1?true:false;
+  if(e===20)return tog===1; if(e===21)return tog===0; return false;
+}
+// вход в клетку: подбор ключа, переключатель, портал
+function enterCell(lv,n,keys,tog){
+  const it=lv.itm[n];
+  if(it>=IT_KEY&&it<IT_KEY+3)keys|=1<<(it-IT_KEY);
+  else if(it===IT_LEVER)tog^=1;
+  else if(it>=IT_PORTAL)n=lv.portals[(it-IT_PORTAL)^1];
+  return [n,keys,tog];
+}
+// BFS по состояниям (клетка, ключи, переключатель) до цели
+function bfsGoal(lv,c0,k0,t0,isGoal){
+  const S=lv.N*16, prev=new Int32Array(S).fill(-2);
+  const s0=c0*16+k0*2+t0; prev[s0]=-1;
+  const q=new Int32Array(S); let qh=0,qt=0; q[qt++]=s0;
+  while(qh<qt){
+    const s=q[qh++], c=s>>4, k=(s>>1)&7, t=s&1;
+    if(s!==s0&&isGoal(c)){const path=[];let x=s;while(x>=0){path.push(x);x=prev[x];}path.reverse();return path.map(v=>({c:v>>4,k:(v>>1)&7,t:v&1}));}
+    for(let d=0;d<4;d++){const n=nbr(lv,c,d);if(n<0)continue;if(!edgePass(getE(lv,c,d),k,t))continue;
+      const r=enterCell(lv,n,k,t);const s2=r[0]*16+r[1]*2+r[2];if(prev[s2]!==-2)continue;prev[s2]=s;q[qt++]=s2;}
+  }
+  return null;
+}
+// жадное решение: ближайший огонь → … → выход
+function solveFrom(lv,c,k,t,sparkLeft){
+  const left=new Uint8Array(sparkLeft);let rem=0;for(let i=0;i<left.length;i++)rem+=left[i];
+  let moves=0;const full=[{c,k,t}];
+  while(true){
+    const p=bfsGoal(lv,c,k,t,rem>0?(x=>left[x]===1):(x=>x===lv.exit));
+    if(!p)return null;
+    moves+=p.length-1;for(let i=1;i<p.length;i++)full.push(p[i]);
+    const e=p[p.length-1];c=e.c;k=e.k;t=e.t;
+    if(rem>0){left[c]=0;rem--;}else return {moves,path:full};
+  }
+}
+
+function tryGen(L,cfg,a){
+  const rng=mulberry32(L*9973+a*7919+12345);
+  const R=n=>Math.floor(rng()*n);
+  const g=makeGrid(cfg.W,cfg.H);const {W,H,N}=g;
+  // 1. лабиринт: поиск в глубину с возвратом
+  const vis=new Uint8Array(N);const st=[R(N)];vis[st[0]]=1;
+  while(st.length){const c=st[st.length-1];const opts=[];
+    for(let d=0;d<4;d++){const n=nbr(g,c,d);if(n>=0&&!vis[n])opts.push(d);}
+    if(!opts.length){st.pop();continue}
+    const d=opts[R(opts.length)];const n=nbr(g,c,d);setE(g,c,d,1);vis[n]=1;st.push(n);}
+  // 2. петли
+  for(let c=0;c<N;c++){let deg=0;const walls=[];
+    for(let d=0;d<4;d++){const n=nbr(g,c,d);if(n<0)continue;if(getE(g,c,d))deg++;else walls.push(d);}
+    if(deg===1&&walls.length&&rng()<cfg.braid*2.2)setE(g,c,walls[R(walls.length)],1);
+    else if(walls.length&&rng()<cfg.braid*0.35)setE(g,c,walls[R(walls.length)],1);}
+  const deg=c=>{let k=0;for(let d=0;d<4;d++){if(nbr(g,c,d)>=0&&getE(g,c,d))k++;}return k;};
+  const bfsPlain=(s)=>{const dist=new Int32Array(N).fill(-1),par=new Int32Array(N).fill(-1);dist[s]=0;const q=[s];
+    for(let h=0;h<q.length;h++){const c=q[h];for(let d=0;d<4;d++){const n=nbr(g,c,d);if(n<0||getE(g,c,d)!==1||dist[n]>=0)continue;dist[n]=dist[c]+1;par[n]=c;q.push(n);}}return{dist,par};};
+  // 3. старт и выход — концы самого длинного пути
+  let r=bfsPlain(R(N));let far=0;for(let c=0;c<N;c++)if(r.dist[c]>r.dist[far])far=c;
+  r=bfsPlain(far);let far2=0;for(let c=0;c<N;c++)if(r.dist[c]>r.dist[far2])far2=c;
+  const start=far, exit=far2;
+  const path=[];for(let c=exit;c>=0;c=r.par[c])path.push(c);path.reverse();
+  const onPath=new Uint8Array(N);path.forEach(c=>onPath[c]=1);
+  // 4. мосты (рёбра, без которых граф распадается)
+  const tin=new Int32Array(N).fill(-1),low=new Int32Array(N);let timer=0;const bridges=new Set();
+  const dfs=(v,pk)=>{tin[v]=low[v]=timer++;for(let d=0;d<4;d++){const n=nbr(g,v,d);if(n<0||getE(g,v,d)!==1)continue;const k=ekey(g,v,d);if(k===pk)continue;
+    if(tin[n]>=0)low[v]=Math.min(low[v],tin[n]);else{dfs(n,k);low[v]=Math.min(low[v],low[n]);if(low[n]>tin[v])bridges.add(k);}}};
+  dfs(start,-1);
+  const dirTo=(c,n)=>{for(let d=0;d<4;d++)if(nbr(g,c,d)===n)return d;return -1;};
+  // 5. преграды на пути
+  const nb=cfg.doors+cfg.gates+cfg.cuts;
+  const lv={L,W,H,N,eh:g.eh,ev:g.ev,itm:new Int16Array(N),portals:[],start,exit,cfg,sparks:[]};
+  const itm=lv.itm;const used=new Uint8Array(N);used[start]=used[exit]=1;
+  const kinds=[];for(let i=0;i<cfg.doors;i++)kinds.push('door');for(let i=0;i<cfg.gates;i++)kinds.push('gate');for(let i=0;i<cfg.cuts;i++)kinds.push('cut');
+  for(let i=kinds.length-1;i>0;i--){const j=R(i+1);[kinds[i],kinds[j]]=[kinds[j],kinds[i]];}
+  let kpos=[];
+  if(nb>0){
+    const cand=[];for(let k=2;k<=path.length-3;k++){const d=dirTo(path[k],path[k+1]);if(bridges.has(ekey(g,path[k],d)))cand.push(k);}
+    if(cand.length<nb*2)return null;
+    for(let j=0;j<nb;j++)kpos.push(cand[Math.floor((j+0.25+rng()*0.5)*cand.length/nb)]);
+    for(let j=1;j<nb;j++)if(kpos[j]<=kpos[j-1])return null;
+  }
+  const colors=[0,1,2];for(let i=2;i>0;i--){const j=R(i+1);[colors[i],colors[j]]=[colors[j],colors[i]];}
+  let ci=0,gi=0;const bar=[];
+  for(let j=0;j<nb;j++){const k=kpos[j],c=path[k],d=dirTo(c,path[k+1]);
+    if(kinds[j]==='door'){const col=colors[ci++];setE(g,c,d,E_DOOR+col);bar.push({kind:'door',col});}
+    else if(kinds[j]==='gate'){setE(g,c,d,gi%2===0?E_RED:E_BLUE);gi++;bar.push({kind:'gate'});}
+    else {setE(g,c,d,0);bar.push({kind:'cut'});}
+  }
+  // сегменты между преградами
+  const comp=new Int32Array(N).fill(-1);let nc=0;
+  for(let s=0;s<N;s++){if(comp[s]>=0)continue;const q=[s];comp[s]=nc;
+    for(let h=0;h<q.length;h++){const c=q[h];for(let d=0;d<4;d++){const n=nbr(g,c,d);if(n<0||getE(g,c,d)!==1||comp[n]>=0)continue;comp[n]=nc;q.push(n);}}nc++;}
+  const segComp=[comp[start]];for(let j=0;j<nb;j++)segComp.push(comp[path[kpos[j]+1]]);
+  const pick=(cid,allowPath)=>{const cands=[];
+    for(let c=0;c<N;c++){if(used[c]||(cid>=0&&comp[c]!==cid))continue;if(onPath[c]&&!allowPath)continue;const w=deg(c)===1?3:1;for(let t=0;t<w;t++)cands.push(c);}
+    if(!cands.length)return -1;return cands[R(cands.length)];};
+  const pickSeg=(cid)=>{let c=pick(cid,false);if(c<0)c=pick(cid,true);return c;};
+  for(let j=0;j<nb;j++){const b=bar[j];
+    if(b.kind==='door'){const c=pickSeg(segComp[R(j+1)]);if(c<0)return null;itm[c]=IT_KEY+b.col;used[c]=1;}
+    else if(b.kind==='gate'){const c=pickSeg(segComp[j]);if(c<0)return null;itm[c]=IT_LEVER;used[c]=1;}
+    else {const a1=pickSeg(segComp[j]);if(a1<0)return null;used[a1]=1;const b1=pickSeg(segComp[j+1]);if(b1<0)return null;used[b1]=1;
+      const p=lv.portals.length;lv.portals.push(a1,b1);itm[a1]=IT_PORTAL+p;itm[b1]=IT_PORTAL+p+1;}
+  }
+  // ложные решётки
+  if(cfg.decoyGates){const ed=[];for(let c=0;c<N;c++)for(let d=0;d<2;d++){const n=nbr(g,c,d);if(n<0||getE(g,c,d)!==1)continue;if(onPath[c]&&onPath[n])continue;ed.push([c,d]);}
+    for(let t=0;t<cfg.decoyGates&&ed.length;t++){const i=R(ed.length);const [c,d]=ed.splice(i,1)[0];setE(g,c,d,rng()<0.5?E_RED:E_BLUE);}}
+  // ложные порталы
+  for(let t=0;t<cfg.decoyPortals;t++){const a1=pick(-1,false);if(a1<0)return null;used[a1]=1;let b1=-1;
+    for(let tr=0;tr<30;tr++){const c=pick(-1,false);if(c<0)break;if(Math.abs(c%W-a1%W)+Math.abs(((c/W)|0)-((a1/W)|0))>=6){b1=c;break;}}
+    if(b1<0)return null;used[b1]=1;
+    const p=lv.portals.length;lv.portals.push(a1,b1);itm[a1]=IT_PORTAL+p;itm[b1]=IT_PORTAL+p+1;}
+  // огни
+  const sx=start%W,sy=(start/W)|0;
+  for(let t=0;t<cfg.sparks;t++){let best=-1;
+    for(let tr=0;tr<40;tr++){const c=pick(-1,tr>30);if(c<0)break;const x=c%W,y=(c/W)|0;
+      let ok=Math.abs(x-sx)+Math.abs(y-sy)>=3;for(const s of lv.sparks){if(Math.abs(x-s%W)+Math.abs(y-((s/W)|0))<3)ok=false;}
+      if(ok){best=c;break;}if(best<0)best=c;}
+    if(best<0)return null;itm[best]=IT_SPARK;used[best]=1;lv.sparks.push(best);}
+  // проверка решателем
+  const left=new Uint8Array(N);lv.sparks.forEach(c=>left[c]=1);
+  const sol=solveFrom(lv,start,0,0,left);
+  if(!sol)return null;
+  // каждая решётка на пути и каждый разрез должны действительно мешать: без переключателей/порталов решения нет
+  if(cfg.gates){const save=itm.slice();for(let c=0;c<N;c++)if(itm[c]===IT_LEVER)itm[c]=0;const s2=solveFrom(lv,start,0,0,left);itm.set(save);if(s2)return null;}
+  lv.par=sol.moves;
+  return lv;
+}
+function genLevel(L){
+  const cfg=levelCfg(L);
+  for(let a=0;a<600;a++){const lv=tryGen(L,cfg,a);if(lv){lv.attempt=a;return lv;}}
+  throw new Error('level '+L+' failed');
+}
+if(typeof module!=='undefined')module.exports={genLevel,levelCfg,solveFrom,bfsGoal,LEVEL_COUNT,enterCell,edgePass,getE,nbr};
+// ===== «Нить»: движок игры =====
+(function(){
+'use strict';
+const C=2.6,T=0.5,P=C+T,HH=2.7,EYE=1.45,PR=0.3,BASE_SPEED=4.2;
+const KEY_COLORS=[0xffd34d,0x45e0c9,0xff7ad9];
+const KEY_NAMES=['Жёлтый','Бирюзовый','Розовый'];
+const KEY_NAMES_PL=['жёлтые','бирюзовые','розовые'];
+const PORTAL_COLORS=[0x5ad1ff,0xb98cff,0x9dff5a];
+const RED=0xff5468,BLUE=0x4f8dff;
+const WORLDS=[
+ {name:'Сад',desc:'Живые изгороди. Найди выход, а с 4-го уровня ещё и огни.',bg:0x9fc6e8,fog:0xa9cbe0,fn:14,ff:48,ceil:false,wall:['leaf','#24552a','#4f9a45'],floor:['#6c8a47','#5a763b'],hemi:[0xe6f4ff,0x3d4f2a,0.95],dir:0.75,thread:0xffc23a,lamp:0.35,lampD:10},
+ {name:'Песчаник',desc:'Ключи открывают двери своего цвета.',bg:0xf1caa0,fog:0xeec59b,fn:12,ff:42,ceil:false,wall:['brick','#9c6a3c','#d4a26a'],floor:['#b48c63','#a27c55'],hemi:[0xfff1dc,0x6a4a2c,0.95],dir:0.8,thread:0x7a2cff,lamp:0.35,lampD:10},
+ {name:'Лёд',desc:'Плиты-переключатели меняют местами красные и синие решётки.',bg:0xcfe6f5,fog:0xd8ecf7,fn:12,ff:42,ceil:false,wall:['ice','#6aa3cc','#d2ecfa'],floor:['#8fa9bd','#7e98ad'],hemi:[0xffffff,0x6c859a,0.7],dir:0.45,thread:0xff7a1a,lamp:0.3,lampD:10},
+ {name:'Медь',desc:'Порталы связывают далёкие части лабиринта.',bg:0x1a120d,fog:0x24180f,fn:6,ff:30,ceil:true,wall:['panel','#7e4a2c','#c27c4a'],floor:['#3b2b20','#2f2219'],hemi:[0xffd9b0,0x2a1a10,0.55],dir:0,thread:0x5ad1ff,lamp:1.25,lampD:14},
+ {name:'Обсидиан',desc:'Тьма. Видно только то, что освещает фонарь.',bg:0x040406,fog:0x040406,fn:1.5,ff:9.5,ceil:true,wall:['stone','#1b1822','#3d3550'],floor:['#1a171f','#121016'],hemi:[0x8070a0,0x050505,0.08],dir:0,thread:0xffc23a,lamp:2.4,lampD:11},
+ {name:'Звёзды',desc:'Всё вместе в самых больших лабиринтах.',bg:0x0c0a22,fog:0x141036,fn:12,ff:46,ceil:false,stars:true,wall:['crystal','#30266a','#7a63d6'],floor:['#1f1b44','#17143a'],hemi:[0xb9a8ff,0x15123a,0.75],dir:0.35,thread:0xffc23a,lamp:0.9,lampD:12},
+];
+const TIPS={
+ 1:['Сад','Как ходить','Ты внутри живой изгороди. Иди к светящейся арке выхода. За тобой по полу тянется нить, так видно, где ты уже был. Мини-карта в углу рисует только то, что ты успел увидеть.'],
+ 4:['Сад','Огни','Теперь в лабиринте спрятаны огни ✦. Выход откроется, только когда соберёшь все. Счётчик справа сверху.'],
+ 11:['Песчаник','Ключи и двери','Цветная дверь не пускает дальше. Найди ключ того же цвета: он откроет все двери этого цвета разом.'],
+ 21:['Лёд','Решётки и плиты','Красные решётки сейчас подняты, синие опущены. Наступи на плиту-переключатель, и они поменяются местами. Каждый новый шаг на плиту снова их меняет.'],
+ 31:['Медь','Порталы','Некоторые части лабиринта соединены только порталами. Шагни в кольцо, и окажешься у кольца того же цвета. Чтобы вернуться, выйди из кольца и шагни в него снова.'],
+ 41:['Обсидиан','Тьма','Здесь темно, фонарь светит на несколько шагов. Карта всё ещё помогает, а нить на полу важна как никогда.'],
+ 51:['Звёзды','Всё вместе','Ключи, плиты, порталы и огни в самых больших лабиринтах игры. Удачи.'],
+};
+// ---------- сохранение ----------
+const SAVE_KEY='nit-save-v1';
+let save={stars:{},best:{},tips:{},set:{speed:1,sens:1,mini:true,thread:true,sound:true,quality:true}};
+try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(s){save.stars=s.stars||{};save.best=s.best||{};save.tips=s.tips||{};Object.assign(save.set,s.set||{});}}catch(e){}
+function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}}
+const $=id=>document.getElementById(id);
+const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+
+// ---------- звук ----------
+let actx=null;
+function audio(){if(!save.set.sound)return null;try{if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();}catch(e){actx=null}return actx;}
+function tone(freqs,dur,type,vol){const a=audio();if(!a)return;const t0=a.currentTime;
+  freqs.forEach((f,i)=>{const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t0+i*dur*0.6);
+    g.gain.setValueAtTime(0.0001,t0+i*dur*0.6);g.gain.exponentialRampToValueAtTime(vol||0.12,t0+i*dur*0.6+0.015);g.gain.exponentialRampToValueAtTime(0.0001,t0+i*dur*0.6+dur);
+    o.connect(g).connect(a.destination);o.start(t0+i*dur*0.6);o.stop(t0+i*dur*0.6+dur+0.05);});}
+const SND={spark:()=>tone([880,1320],0.18,'triangle',0.1),key:()=>tone([523,659,784],0.16,'triangle',0.1),door:()=>tone([196,147],0.3,'sawtooth',0.05),
+  lever:()=>tone([330,220],0.14,'square',0.05),portal:()=>tone([300,600,1200],0.12,'sine',0.09),open:()=>tone([523,784,1046],0.22,'triangle',0.1),
+  win:()=>tone([523,659,784,1046,1318],0.2,'triangle',0.1),bump:()=>tone([110],0.08,'sine',0.04)};
+
+// ---------- three.js ----------
+const view=$('view');
+let renderer;
+try{renderer=new THREE.WebGLRenderer({antialias:true});}catch(e){view.innerHTML='<p style="padding:24px">Не удалось запустить 3D: браузер не поддерживает WebGL.</p>';return;}
+view.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(72,1,0.05,400);camera.rotation.order='YXZ';
+const hemi=new THREE.HemisphereLight(0xffffff,0x444444,1);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,0.7);sun.position.set(0.4,1,0.25);scene.add(sun);
+const lamp=new THREE.PointLight(0xffe2b0,1,12,2);scene.add(lamp);
+function applyQuality(){renderer.setPixelRatio(save.set.quality?Math.min(devicePixelRatio||1,2):Math.min(devicePixelRatio||1,1)*0.7);resize();}
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);
+
+// ---------- процедурные текстуры ----------
+function rnd(seed){return mulberry32(seed);}
+function hex(c){return '#'+new THREE.Color(c).getHexString();}
+function mix(a,b,t){const ca=new THREE.Color(a),cb=new THREE.Color(b);return '#'+ca.lerp(cb,t).getHexString();}
+function canvasTex(draw,size){const cv=document.createElement('canvas');cv.width=cv.height=size||256;const g=cv.getContext('2d');draw(g,cv.width);
+  const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return t;}
+function wallTex(kind,c1,c2){const r=rnd(kind.length*31+7);
+  return canvasTex((g,s)=>{
+    if(kind==='leaf'){g.fillStyle=c1;g.fillRect(0,0,s,s);for(let i=0;i<1400;i++){g.fillStyle=mix(c1,c2,r());g.globalAlpha=0.55+r()*0.45;const x=r()*s,y=r()*s;g.beginPath();g.ellipse(x,y,3+r()*6,2+r()*3,r()*3.14,0,6.29);g.fill();}g.globalAlpha=1;}
+    else if(kind==='brick'){g.fillStyle=mix(c1,'#000',0.25);g.fillRect(0,0,s,s);const bh=s/8;for(let row=0;row<8;row++){const off=row%2?s/8:0;for(let x=-s/4;x<s;x+=s/4){g.fillStyle=mix(c1,c2,0.3+r()*0.7);g.fillRect(x+off+2,row*bh+2,s/4-4,bh-4);}}
+      for(let i=0;i<900;i++){g.fillStyle='rgba(0,0,0,'+(r()*0.12)+')';g.fillRect(r()*s,r()*s,2,2);}}
+    else if(kind==='ice'){const gr=g.createLinearGradient(0,0,0,s);gr.addColorStop(0,c2);gr.addColorStop(1,c1);g.fillStyle=gr;g.fillRect(0,0,s,s);
+      g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.2;for(let i=0;i<22;i++){g.beginPath();let x=r()*s,y=r()*s;g.moveTo(x,y);for(let k=0;k<5;k++){x+=(r()-0.5)*50;y+=(r()-0.5)*50;g.lineTo(x,y);}g.stroke();}}
+    else if(kind==='panel'){g.fillStyle=mix(c1,'#000',0.35);g.fillRect(0,0,s,s);const n=4;const w=s/n;for(let i=0;i<n;i++)for(let j=0;j<n/2;j++){g.fillStyle=mix(c1,c2,0.2+r()*0.7);g.fillRect(i*w+3,j*s/2+3,w-6,s/2-6);
+        g.fillStyle='rgba(255,230,190,.5)';[[8,8],[w-10,8],[8,s/2-10],[w-10,s/2-10]].forEach(p=>{g.beginPath();g.arc(i*w+p[0],j*s/2+p[1],2.2,0,6.29);g.fill();});}
+      for(let i=0;i<500;i++){g.fillStyle='rgba(40,120,90,'+(r()*0.18)+')';g.fillRect(r()*s,r()*s,3,3);}}
+    else if(kind==='stone'){g.fillStyle=c1;g.fillRect(0,0,s,s);for(let i=0;i<2500;i++){g.fillStyle=mix(c1,c2,r());g.globalAlpha=0.5;g.fillRect(r()*s,r()*s,3,3);}g.globalAlpha=1;
+      g.strokeStyle='rgba(150,110,255,.35)';g.lineWidth=1.4;for(let i=0;i<7;i++){g.beginPath();let x=r()*s,y=r()*s;g.moveTo(x,y);for(let k=0;k<6;k++){x+=(r()-0.5)*60;y+=r()*40;g.lineTo(x,y);}g.stroke();}}
+    else {const gr=g.createLinearGradient(0,s,s,0);gr.addColorStop(0,c1);gr.addColorStop(1,c2);g.fillStyle=gr;g.fillRect(0,0,s,s);
+      g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=1.5;for(let i=0;i<14;i++){g.beginPath();g.moveTo(r()*s,0);g.lineTo(r()*s,s);g.stroke();}
+      for(let i=0;i<60;i++){g.fillStyle='rgba(255,255,255,'+(0.3+r()*0.6)+')';g.fillRect(r()*s,r()*s,1.5,1.5);}}
+  });}
+function floorTex(c1,c2){const r=rnd(99);return canvasTex((g,s)=>{g.fillStyle=c1;g.fillRect(0,0,s,s);
+  for(let i=0;i<1600;i++){g.fillStyle=mix(c1,c2,r());g.globalAlpha=0.6;g.fillRect(r()*s,r()*s,4,4);}g.globalAlpha=1;
+  g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=4;g.strokeRect(0,0,s,s);});}
+const glowTex=canvasTex((g,s)=>{const gr=g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(0.25,'rgba(255,255,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,s,s);},128);
+const swirlTex=canvasTex((g,s)=>{g.translate(s/2,s/2);for(let i=0;i<7;i++){g.rotate(Math.PI*2/7);g.beginPath();for(let t=0;t<1;t+=0.02){const a=t*3.2,rr=t*s/2;g.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}g.strokeStyle='rgba(255,255,255,.8)';g.lineWidth=5;g.stroke();}
+  const gr=g.createRadialGradient(0,0,0,0,0,s/2);gr.addColorStop(0,'rgba(255,255,255,.9)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.globalCompositeOperation='destination-in';g.fillRect(-s/2,-s/2,s,s);},256);
+function glow(color,size,op){const m=new THREE.SpriteMaterial({map:glowTex,color,transparent:true,opacity:op==null?0.9:op,blending:THREE.AdditiveBlending,depthWrite:false});const sp=new THREE.Sprite(m);sp.scale.set(size,size,1);return sp;}
+
+// ---------- геометрия уровня ----------
+const bStart=i=>Math.floor(i/2)*P+(i&1?T:0), bSize=i=>i&1?C:T;
+const bIndex=x=>{const k=Math.floor(x/P),r=x-k*P;return r<T?2*k:2*k+1;};
+const cellX=c=>(c%lv.W)*P+T+C/2, cellZ=c=>Math.floor(c/lv.W)*P+T+C/2;
+
+let lv=null,levelGroup=null,LNUM=1,world=WORLDS[0];
+let doors=[],gates=[],itemObj={},exitObj=null,levers=[],portalObjs=[];
+let player={x:0,z:0,yaw:0,pitch:0,vx:0,vz:0},curCell=0,keys=0,tog=0,sparksLeft=0,sparkLeftArr=null;
+let seen=null,visited=null,timeAcc=0,timerOn=false,hintUsed=false,state='menu',bob=0,par=60;
+let threadMesh=null,threadN=0,threadLast=null;const THREAD_MAX=6000;
+let hintMesh=null,hintTime=0;
+let starsObj=null;
+
+function disposeLevel(){if(!levelGroup)return;scene.remove(levelGroup);levelGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m.map&&m.map!==glowTex&&m.map!==swirlTex)m.map.dispose();m.dispose();});}});levelGroup=null;}
+function edgeVal(c,d){return getE(lv,c,d);}
+
+function buildLevel(L){
+  disposeLevel();LNUM=L;lv=genLevel(L);world=WORLDS[lv.cfg.w];
+  levelGroup=new THREE.Group();scene.add(levelGroup);
+  const W=lv.W,H=lv.H,TW=W*P+T,TH=H*P+T;
+  scene.background=new THREE.Color(world.bg);
+  scene.fog=new THREE.Fog(world.fog,world.fn,world.ff);
+  hemi.color.set(world.hemi[0]);hemi.groundColor.set(world.hemi[1]);hemi.intensity=world.hemi[2];
+  sun.intensity=world.dir;lamp.intensity=world.lamp;lamp.distance=world.lampD;
+  // стены
+  const wt=wallTex(world.wall[0],world.wall[1],world.wall[2]);
+  const wmat=new THREE.MeshStandardMaterial({map:wt,roughness:0.92,metalness:world.wall[0]==='panel'?0.35:0.02});
+  const vList=[],hList=[],pList=[];
+  for(let y=0;y<H;y++){vList.push([T/2,y*P+T+C/2],[W*P+T/2,y*P+T+C/2]);for(let x=0;x<W-1;x++)if(lv.eh[y*W+x]===0)vList.push([(x+1)*P+T/2,y*P+T+C/2]);}
+  for(let x=0;x<W;x++){hList.push([x*P+T+C/2,T/2],[x*P+T+C/2,H*P+T/2]);for(let y=0;y<H-1;y++)if(lv.ev[y*W+x]===0)hList.push([x*P+T+C/2,(y+1)*P+T/2]);}
+  for(let i=0;i<=W;i++)for(let j=0;j<=H;j++)pList.push([i*P+T/2,j*P+T/2]);
+  const inst=(geo,list,y)=>{const m=new THREE.InstancedMesh(geo,wmat,list.length);const o=new THREE.Object3D();list.forEach((p,i)=>{o.position.set(p[0],y,p[1]);o.updateMatrix();m.setMatrixAt(i,o.matrix);});levelGroup.add(m);};
+  inst(new THREE.BoxGeometry(T,HH,C),vList,HH/2);inst(new THREE.BoxGeometry(C,HH,T),hList,HH/2);inst(new THREE.BoxGeometry(T*1.06,HH+0.08,T*1.06),pList,HH/2+0.04);
+  // пол и потолок
+  const ft=floorTex(world.floor[0],world.floor[1]);ft.repeat.set(TW/P,TH/P);
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(TW,TH),new THREE.MeshStandardMaterial({map:ft,roughness:1}));fl.rotation.x=-Math.PI/2;fl.position.set(TW/2,0,TH/2);levelGroup.add(fl);
+  if(world.ceil){const cm=new THREE.Mesh(new THREE.PlaneGeometry(TW,TH),new THREE.MeshStandardMaterial({color:new THREE.Color(world.fog).multiplyScalar(0.8),roughness:1}));cm.rotation.x=Math.PI/2;cm.position.set(TW/2,HH,TH/2);levelGroup.add(cm);}
+  if(world.stars){const g=new THREE.BufferGeometry();const pts=[];const r=rnd(5);for(let i=0;i<1600;i++){const u=r()*2-1,a=r()*6.283,rr=180;const s=Math.sqrt(1-u*u);pts.push(TW/2+Math.cos(a)*s*rr,Math.abs(u)*rr*0.9+10,TH/2+Math.sin(a)*s*rr);}
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));const st=new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:1.2,sizeAttenuation:true,fog:false}));levelGroup.add(st);}
+  // двери и решётки
+  doors=[];gates=[];levers=[];portalObjs=[];itemObj={};
+  for(let c=0;c<lv.N;c++)for(let d=0;d<2;d++){if(nbr(lv,c,d)<0)continue;const e=edgeVal(c,d);if(e<10)continue;
+    const g=new THREE.Group();const x=cellX(c)+(d===0?P/2:0),z=cellZ(c)+(d===1?P/2:0);g.position.set(x,0,z);if(d===0)g.rotation.y=Math.PI/2;
+    if(e<13){const col=KEY_COLORS[e-10];const m=new THREE.Mesh(new THREE.BoxGeometry(C,HH,T*0.7),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.25,roughness:0.5,metalness:0.2}));m.position.y=HH/2;g.add(m);
+      [-1,1].forEach(s=>{const k=new THREE.Mesh(new THREE.TorusGeometry(0.32,0.07,10,28),new THREE.MeshBasicMaterial({color:0xffffff}));k.position.set(0,HH*0.55,s*T*0.37);g.add(k);
+        const k2=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.4,0.04),new THREE.MeshBasicMaterial({color:0xffffff}));k2.position.set(0,HH*0.55-0.42,s*T*0.37);g.add(k2);});
+      doors.push({g,col:e-10,y:0,ty:0});}
+    else{const col=e===20?RED:BLUE;const mat=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.55,roughness:0.4,metalness:0.4});
+      for(let i=0;i<7;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,HH,8),mat);b.position.set(-C/2+0.2+i*(C-0.4)/6,HH/2,0);g.add(b);}
+      const rail=new THREE.Mesh(new THREE.BoxGeometry(C,0.12,0.14),mat);rail.position.y=HH-0.08;g.add(rail);const rail2=rail.clone();rail2.position.y=0.5;g.add(rail2);
+      gates.push({g,red:e===20,y:0,ty:0});}
+    levelGroup.add(g);}
+  // предметы
+  for(let c=0;c<lv.N;c++){const it=lv.itm[c];if(!it)continue;const g=new THREE.Group();g.position.set(cellX(c),0,cellZ(c));let o={g,c,kind:''};
+    if(it===IT_SPARK){const m=new THREE.Mesh(new THREE.OctahedronGeometry(0.24),new THREE.MeshBasicMaterial({color:0xfff0b8}));m.position.y=1.15;g.add(m);const gl=glow(0xffc23a,1.6);gl.position.y=1.15;g.add(gl);o.kind='spark';o.spin=m;}
+    else if(it>=IT_KEY&&it<IT_KEY+3){const col=KEY_COLORS[it-IT_KEY];const mat=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.6,metalness:0.5,roughness:0.3});const k=new THREE.Group();
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(0.17,0.055,10,24),mat);ring.position.x=-0.25;k.add(ring);const sh=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.07,0.07),mat);sh.position.x=0.08;k.add(sh);
+      const t1=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.14,0.07),mat);t1.position.set(0.22,-0.09,0);k.add(t1);const t2=t1.clone();t2.position.x=0.12;k.add(t2);
+      k.position.y=1.15;g.add(k);const gl=glow(col,1.5,0.7);gl.position.y=1.15;g.add(gl);o.kind='key';o.spin=k;}
+    else if(it===IT_LEVER){const base=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.9,0.1,32),new THREE.MeshStandardMaterial({color:0xd8d4ea,roughness:0.6,metalness:0.3}));base.position.y=0.05;g.add(base);
+      const a=new THREE.Mesh(new THREE.TorusGeometry(0.55,0.07,8,24,Math.PI),new THREE.MeshBasicMaterial({color:RED}));a.rotation.x=-Math.PI/2;a.position.y=0.12;g.add(a);
+      const b=new THREE.Mesh(new THREE.TorusGeometry(0.55,0.07,8,24,Math.PI),new THREE.MeshBasicMaterial({color:BLUE}));b.rotation.x=-Math.PI/2;b.rotation.z=Math.PI;b.position.y=0.12;g.add(b);
+      const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,HH,8),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.35,blending:THREE.AdditiveBlending,depthWrite:false}));beam.position.y=HH/2;g.add(beam);
+      o.kind='lever';o.spin=new THREE.Group();g.add(o.spin);o.spin.add(a);o.spin.add(b);o.flash=0;o.base=base;levers.push(o);}
+    else if(it>=IT_PORTAL){const pi=it-IT_PORTAL,col=PORTAL_COLORS[Math.floor(pi/2)%3];const rg=new THREE.Group();
+      const tor=new THREE.Mesh(new THREE.TorusGeometry(0.9,0.08,12,40),new THREE.MeshBasicMaterial({color:col}));rg.add(tor);
+      const disc=new THREE.Mesh(new THREE.CircleGeometry(0.84,40),new THREE.MeshBasicMaterial({map:swirlTex,color:col,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));rg.add(disc);
+      rg.position.y=1.15;g.add(rg);const ring=new THREE.Mesh(new THREE.RingGeometry(0.7,1.0,40),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.5,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=0.02;g.add(ring);
+      o.kind='portal';o.spin=rg;o.disc=disc;portalObjs.push(o);}
+    levelGroup.add(g);itemObj[c]=o;}
+  // выход
+  {const g=new THREE.Group();g.position.set(cellX(lv.exit),0,cellZ(lv.exit));
+    const mat=new THREE.MeshBasicMaterial({color:0x777777});const tor=new THREE.Mesh(new THREE.TorusGeometry(1.0,0.13,14,48),mat);tor.position.y=1.25;g.add(tor);
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(0.95,40),new THREE.MeshBasicMaterial({color:0xffc23a,transparent:true,opacity:0.15,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));disc.position.y=1.25;g.add(disc);
+    const gl=glow(0xffc23a,3.2,0.25);gl.position.y=1.25;g.add(gl);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,60,16,1,true),new THREE.MeshBasicMaterial({color:0xffd36a,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));beam.position.y=30;g.add(beam);
+    const base=new THREE.Mesh(new THREE.RingGeometry(0.9,1.2,40),new THREE.MeshBasicMaterial({color:0xffc23a,transparent:true,opacity:0.5,side:THREE.DoubleSide}));base.rotation.x=-Math.PI/2;base.position.y=0.02;g.add(base);
+    // поворот арки лицом к проходу
+    for(let d=0;d<4;d++){if(nbr(lv,lv.exit,d)>=0&&edgeVal(lv.exit,d)!==0){g.rotation.y=(d===0||d===2)?Math.PI/2:0;break;}}
+    levelGroup.add(g);exitObj={g,mat,disc,gl,beam,tor};}
+  // старт
+  {const r=new THREE.Mesh(new THREE.RingGeometry(0.6,0.75,40),new THREE.MeshBasicMaterial({color:world.thread,transparent:true,opacity:0.6,side:THREE.DoubleSide}));r.rotation.x=-Math.PI/2;r.position.set(cellX(lv.start),0.02,cellZ(lv.start));levelGroup.add(r);}
+  // нить
+  threadMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,0.025,0.075),new THREE.MeshBasicMaterial({color:world.thread}),THREAD_MAX);threadMesh.count=0;threadMesh.frustumCulled=false;levelGroup.add(threadMesh);
+  threadN=0;threadLast=null;
+  // подсказка
+  const shp=new THREE.Shape();shp.moveTo(0,0.42);shp.lineTo(0.32,-0.05);shp.lineTo(0.12,-0.05);shp.lineTo(0.12,-0.38);shp.lineTo(-0.12,-0.38);shp.lineTo(-0.12,-0.05);shp.lineTo(-0.32,-0.05);shp.closePath();
+  const hg=new THREE.ShapeGeometry(shp);hg.rotateX(-Math.PI/2);
+  hintMesh=new THREE.InstancedMesh(hg,new THREE.MeshBasicMaterial({color:0xff2fb3,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,fog:false}),16);hintMesh.count=0;hintMesh.frustumCulled=false;levelGroup.add(hintMesh);
+  resetPlay();
+}
+function resetPlay(){
+  keys=0;tog=0;hintUsed=false;timeAcc=0;timerOn=false;hintTime=0;
+  sparkLeftArr=new Uint8Array(lv.N);lv.sparks.forEach(c=>sparkLeftArr[c]=1);sparksLeft=lv.sparks.length;
+  seen=new Uint8Array(lv.N);visited=new Uint8Array(lv.N);
+  for(const k in itemObj){const o=itemObj[k];o.g.visible=true;o.gone=false;o.fade=0;o.g.scale.set(1,1,1);}
+  doors.forEach(d=>{d.ty=0;d.y=0;d.g.position.y=0;d.g.visible=true;});
+  gates.forEach(g=>{g.ty=g.red?0:-HH+0.1;g.y=g.ty;g.g.position.y=g.y;});
+  if(threadMesh){threadMesh.count=0;threadN=0;threadLast=null;}
+  if(hintMesh)hintMesh.count=0;
+  player.x=cellX(lv.start);player.z=cellZ(lv.start);player.vx=player.vz=0;player.pitch=0;
+  const yawFor=[-Math.PI/2,Math.PI,Math.PI/2,0];
+  // смотреть вдоль открытого прохода
+  let best=0;for(let d=0;d<4;d++){if(nbr(lv,lv.start,d)>=0&&edgeVal(lv.start,d)!==0){best=d;break;}}player.yaw=yawFor[best];
+  curCell=lv.start;markSeen(curCell);
+  par=lv.par*P/(BASE_SPEED*save.set.speed)*1.3+4;
+  updateExit();updateHUD();
+}
+function solidEdge(e){if(e===0)return true;if(e===1)return false;if(e>=10&&e<13)return !((keys>>(e-10))&1);if(e===20)return tog===0;if(e===21)return tog===1;return true;}
+function solidAt(bx,bz){const W=lv.W,H=lv.H;if(bx<0||bz<0||bx>2*W||bz>2*H)return true;const ox=bx&1,oz=bz&1;
+  if(!ox&&!oz)return true;if(ox&&oz)return false;
+  if(!ox){const i=bx/2,cy=(bz-1)/2;if(i===0||i===W)return true;return solidEdge(lv.eh[cy*W+i-1]);}
+  const j=bz/2,cx=(bx-1)/2;if(j===0||j===H)return true;return solidEdge(lv.ev[(j-1)*W+cx]);}
+function collide(){let hit=false;
+  for(let it=0;it<3;it++){const bx0=bIndex(player.x-PR),bx1=bIndex(player.x+PR),bz0=bIndex(player.z-PR),bz1=bIndex(player.z+PR);
+    for(let bx=bx0;bx<=bx1;bx++)for(let bz=bz0;bz<=bz1;bz++){if(!solidAt(bx,bz))continue;
+      const x0=bStart(bx),x1=x0+bSize(bx),z0=bStart(bz),z1=z0+bSize(bz);
+      const cx=Math.max(x0,Math.min(player.x,x1)),cz=Math.max(z0,Math.min(player.z,z1));let dx=player.x-cx,dz=player.z-cz;const d2=dx*dx+dz*dz;
+      if(d2<PR*PR){hit=true;if(d2>1e-9){const d=Math.sqrt(d2);player.x+=dx/d*(PR-d);player.z+=dz/d*(PR-d);}
+        else{const l=player.x-x0,r=x1-player.x,u=player.z-z0,dd=z1-player.z;const m=Math.min(l,r,u,dd);if(m===l)player.x=x0-PR;else if(m===r)player.x=x1+PR;else if(m===u)player.z=z0-PR;else player.z=z1+PR;}}}}
+  return hit;}
+function cellAtPlayer(){const bx=bIndex(player.x),bz=bIndex(player.z);if(!(bx&1)||!(bz&1))return -1;const cx=(bx-1)/2,cy=(bz-1)/2;if(cx<0||cy<0||cx>=lv.W||cy>=lv.H)return -1;return cy*lv.W+cx;}
+function markSeen(c){visited[c]=1;seen[c]=1;const lim=world===WORLDS[4]?3:40;
+  for(let d=0;d<4;d++){let n=c;for(let k=0;k<lim;k++){const m=nbr(lv,n,d);if(m<0)break;const e=edgeVal(n,d);if(e===0||(e>=10&&e<13&&!((keys>>(e-10))&1)))break;n=m;seen[n]=1;}}}
+
+// ---------- события клеток ----------
+function onEnter(c){
+  markSeen(c);const o=itemObj[c];
+  if(o&&!o.gone){
+    if(o.kind==='spark'&&sparkLeftArr[c]){sparkLeftArr[c]=0;sparksLeft--;o.gone=true;SND.spark();
+      if(sparksLeft===0){toast('Все огни собраны. Выход открыт!');SND.open();}else toast('Огонь ✦ осталось '+sparksLeft);updateExit();}
+    else if(o.kind==='key'){const col=lv.itm[c]-IT_KEY;keys|=1<<col;o.gone=true;SND.key();doors.forEach(d=>{if(d.col===col)d.ty=-HH-0.05;});
+      toast(KEY_NAMES[col]+' ключ: '+KEY_NAMES_PL[col]+' двери открыты');setTimeout(()=>SND.door(),250);markSeen(c);}
+  }
+  if(lv.itm[c]===IT_LEVER){tog^=1;SND.lever();gates.forEach(g=>{const up=g.red?tog===0:tog===1;g.ty=up?0:-HH+0.1;});if(o)o.flash=1;toast(tog?'Подняты синие решётки':'Подняты красные решётки');}
+  else if(lv.itm[c]>=IT_PORTAL){const pi=lv.itm[c]-IT_PORTAL,to=lv.portals[pi^1];player.x=cellX(to);player.z=cellZ(to);player.vx*=0.3;player.vz*=0.3;curCell=to;threadLast=null;markSeen(to);SND.portal();flashScreen(PORTAL_COLORS[Math.floor(pi/2)%3]);}
+  if(c===lv.exit){if(sparksLeft===0){win();return;}else toast('Выход закрыт: собери ещё огней ✦ '+sparksLeft);}
+  updateHUD();
+}
+function updateExit(){if(!exitObj)return;const open=sparksLeft===0;exitObj.mat.color.set(open?0xffc23a:0x6d6a64);exitObj.disc.material.opacity=open?0.55:0.08;exitObj.gl.material.opacity=open?0.8:0.12;exitObj.beam.material.opacity=open?0.22:0;}
+let flashEl=null;
+function flashScreen(col){if(!flashEl){flashEl=document.createElement('div');flashEl.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:15;transition:opacity .45s;opacity:0';document.body.appendChild(flashEl);}
+  flashEl.style.transition='none';flashEl.style.background=hex(col);flashEl.style.opacity='0.55';flashEl.offsetWidth;flashEl.style.transition='opacity .45s';flashEl.style.opacity='0';}
+let toastT=0;function toast(s){const el=$('toast');el.textContent=s;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2200);}
+
+// ---------- подсказка ----------
+function showHint(){if(state!=='play')return;
+  const p=bfsGoal(lv,curCell,keys,tog,sparksLeft>0?(x=>sparkLeftArr[x]===1):(x=>x===lv.exit));
+  if(!p){toast('Отсюда пути нет. Нажми «Заново».');return;}
+  hintUsed=true;const o=new THREE.Object3D();let n=0;
+  const yawFor=[-Math.PI/2,Math.PI,Math.PI/2,0];
+  for(let i=0;i<p.length-1&&n<14;i++){const a=p[i].c,b=p[i+1].c;let d=-1;for(let k=0;k<4;k++)if(nbr(lv,a,k)===b)d=k;let tele=false;
+    if(d<0){for(let k=0;k<4;k++){const m=nbr(lv,a,k);if(m>=0&&lv.itm[m]>=IT_PORTAL&&lv.portals[(lv.itm[m]-IT_PORTAL)^1]===b)d=k;}tele=true;}
+    if(d<0)break;o.position.set(cellX(a),0.07,cellZ(a));o.rotation.set(0,yawFor[d],0);o.updateMatrix();hintMesh.setMatrixAt(n++,o.matrix);if(tele)break;}
+  hintMesh.count=n;hintMesh.instanceMatrix.needsUpdate=true;hintTime=8;
+  toast((sparksLeft>0?'Стрелки ведут к ближайшему огню':'Стрелки ведут к выходу')+' · не больше 2 звёзд');updateHUD();}
+
+// ---------- карта ----------
+function drawMap(cv,full){const g=cv.getContext('2d'),S=cv.width;g.clearRect(0,0,S,S);if(!lv)return;
+  const W=lv.W,H=lv.H,pad=S*0.04,cs=(S-pad*2)/Math.max(W,H),ox=pad+(S-pad*2-cs*W)/2,oy=pad+(S-pad*2-cs*H)/2;
+  const X=x=>ox+x*cs,Y=y=>oy+y*cs;
+  for(let c=0;c<lv.N;c++){if(!seen[c])continue;const x=c%W,y=(c/W)|0;g.fillStyle=visited[c]?'rgba(243,194,79,.20)':'rgba(255,255,255,.08)';g.fillRect(X(x),Y(y),cs+0.5,cs+0.5);}
+  g.lineCap='round';
+  for(let c=0;c<lv.N;c++){if(!seen[c])continue;const x=c%W,y=(c/W)|0;
+    for(let d=0;d<4;d++){const n=nbr(lv,c,d);const e=n<0?0:edgeVal(c,d);let col=null,lw=Math.max(1.5,cs*0.12),dash=false;
+      if(e===0)col='rgba(235,238,246,.85)';else if(e>=10&&e<13){if(!((keys>>(e-10))&1))col=hex(KEY_COLORS[e-10]);lw*=1.6;}
+      else if(e===20||e===21){const up=e===20?tog===0:tog===1;col=hex(e===20?RED:BLUE);if(!up){dash=true;}lw*=1.3;}
+      if(!col)continue;g.strokeStyle=col;g.lineWidth=lw;g.setLineDash(dash?[cs*0.12,cs*0.16]:[]);g.globalAlpha=dash?0.55:1;g.beginPath();
+      if(d===0){g.moveTo(X(x+1),Y(y));g.lineTo(X(x+1),Y(y+1));}else if(d===1){g.moveTo(X(x),Y(y+1));g.lineTo(X(x+1),Y(y+1));}else if(d===2){g.moveTo(X(x),Y(y));g.lineTo(X(x),Y(y+1));}else{g.moveTo(X(x),Y(y));g.lineTo(X(x+1),Y(y));}g.stroke();g.globalAlpha=1;}}
+  g.setLineDash([]);
+  for(let c=0;c<lv.N;c++){if(!seen[c])continue;const x=c%W+0.5,y=((c/W)|0)+0.5,it=lv.itm[c],o=itemObj[c];
+    if(it===IT_SPARK&&sparkLeftArr[c]){g.fillStyle='#ffc23a';star(g,X(x),Y(y),cs*0.3);}
+    else if(it>=IT_KEY&&it<IT_KEY+3&&o&&!o.gone){g.fillStyle=hex(KEY_COLORS[it-IT_KEY]);g.beginPath();g.arc(X(x),Y(y),cs*0.22,0,6.29);g.fill();}
+    else if(it===IT_LEVER){g.lineWidth=Math.max(1.5,cs*0.1);g.strokeStyle=hex(RED);g.beginPath();g.arc(X(x),Y(y),cs*0.25,Math.PI*0.5,Math.PI*1.5);g.stroke();g.strokeStyle=hex(BLUE);g.beginPath();g.arc(X(x),Y(y),cs*0.25,-Math.PI*0.5,Math.PI*0.5);g.stroke();}
+    else if(it>=IT_PORTAL){g.strokeStyle=hex(PORTAL_COLORS[Math.floor((it-IT_PORTAL)/2)%3]);g.lineWidth=Math.max(1.5,cs*0.12);g.beginPath();g.arc(X(x),Y(y),cs*0.28,0,6.29);g.stroke();}
+    if(c===lv.exit){g.strokeStyle=sparksLeft===0?'#ffc23a':'#8a857a';g.lineWidth=Math.max(2,cs*0.14);g.strokeRect(X(x)-cs*0.3,Y(y)-cs*0.3,cs*0.6,cs*0.6);}}
+  // игрок
+  const px=ox+(player.x-T/2)/P*cs,pz=oy+(player.z-T/2)/P*cs;g.save();g.translate(px,pz);g.rotate(-player.yaw);g.fillStyle='#ffffff';g.strokeStyle='#0b0d12';g.lineWidth=2;
+  const r=Math.max(5,cs*0.36);g.beginPath();g.moveTo(0,-r);g.lineTo(r*0.7,r*0.75);g.lineTo(0,r*0.35);g.lineTo(-r*0.7,r*0.75);g.closePath();g.stroke();g.fill();g.restore();}
+function star(g,x,y,r){g.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,rr=i%2?r*0.4:r;g.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);}g.closePath();g.fill();}
+
+// ---------- HUD ----------
+function fmt(t){t=Math.max(0,t);const m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+(s<10?'0':'')+s;}
+function updateHUD(){if(!lv)return;$('hWorld').textContent=world.name;$('hLevel').textContent=LNUM;$('hPar').textContent='цель '+fmt(par);
+  $('hSparkPill').hidden=lv.sparks.length===0;$('hSparks').textContent=(lv.sparks.length-sparksLeft)+'/'+lv.sparks.length;
+  const kc=new Set();for(let c=0;c<lv.N;c++){if(lv.itm[c]>=IT_KEY&&lv.itm[c]<IT_KEY+3)kc.add(lv.itm[c]-IT_KEY);}
+  $('hKeysPill').hidden=kc.size===0;$('hKeys').innerHTML=[...kc].sort().map(k=>'<i class="'+((keys>>k)&1?'on':'')+'" style="color:'+hex(KEY_COLORS[k])+'"></i>').join('');
+  $('hGatePill').hidden=gates.length===0;$('hGate').innerHTML='<b style="background:'+hex(tog?BLUE:RED)+'"></b>'+(tog?'синие':'красные');
+  $('mini').hidden=!save.set.mini;$('keyshint').hidden=isTouch;}
+
+// ---------- ввод ----------
+const keyDown={};let joy={id:null,ox:0,oy:0,dx:0,dy:0},look={id:null,x:0,y:0},drag=false;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+  if(state==='play'){keyDown[e.code]=true;
+    if(e.code==='KeyM'){openMap();e.preventDefault();}else if(e.code==='KeyH'){showHint();}else if(e.code==='KeyR'){resetPlay();toast('Уровень заново');}
+    else if(e.code==='Escape'||e.code==='KeyP'){pause();}
+    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();}
+  else if(state==='map'&&(e.code==='KeyM'||e.code==='Escape')){closeMap();}
+  else if(state==='pause'&&(e.code==='Escape'||e.code==='KeyP')){resume();}
+  else if(state==='tip'&&(e.code==='Enter'||e.code==='Space')){$('tipGo').click();e.preventDefault();}
+  void k;});
+addEventListener('keyup',e=>{keyDown[e.code]=false;});
+addEventListener('blur',()=>{for(const k in keyDown)keyDown[k]=false;});
+const cvEl=renderer.domElement;
+function locked(){return document.pointerLockElement===cvEl;}
+cvEl.addEventListener('mousedown',e=>{if(state!=='play'||isTouch&&e.sourceCapabilities&&e.sourceCapabilities.firesTouchEvents)return;drag=true;audio();
+  if(!locked()){try{const r=cvEl.requestPointerLock&&cvEl.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(err){}}});
+addEventListener('mouseup',()=>{drag=false;});
+addEventListener('mousemove',e=>{if(state!=='play')return;if(locked()||drag){turn(e.movementX||0,e.movementY||0,0.0024);}});
+function turn(dx,dy,k){const s=k*save.set.sens;player.yaw-=dx*s;player.pitch=Math.max(-0.6,Math.min(0.6,player.pitch-dy*s));}
+cvEl.addEventListener('touchstart',e=>{if(state!=='play')return;e.preventDefault();audio();for(const t of e.changedTouches){
+  if(t.clientX<innerWidth/2&&joy.id===null){joy.id=t.identifier;joy.ox=t.clientX;joy.oy=t.clientY;joy.dx=joy.dy=0;const j=$('joy');j.hidden=false;j.style.left=t.clientX+'px';j.style.top=t.clientY+'px';j.firstElementChild.style.transform='';}
+  else if(look.id===null){look.id=t.identifier;look.x=t.clientX;look.y=t.clientY;}}},{passive:false});
+cvEl.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){
+  if(t.identifier===joy.id){let dx=t.clientX-joy.ox,dy=t.clientY-joy.oy;const l=Math.hypot(dx,dy),m=50;if(l>m){dx*=m/l;dy*=m/l;}joy.dx=dx/m;joy.dy=dy/m;$('joy').firstElementChild.style.transform='translate('+dx+'px,'+dy+'px)';}
+  else if(t.identifier===look.id){turn(t.clientX-look.x,t.clientY-look.y,0.0055);look.x=t.clientX;look.y=t.clientY;}}},{passive:false});
+function endTouch(e){for(const t of e.changedTouches){if(t.identifier===joy.id){joy.id=null;joy.dx=joy.dy=0;$('joy').hidden=true;}if(t.identifier===look.id)look.id=null;}}
+cvEl.addEventListener('touchend',endTouch);cvEl.addEventListener('touchcancel',endTouch);
+
+// ---------- игровой цикл ----------
+let last=performance.now(),tAnim=0,menuT=0;
+function frame(now){requestAnimationFrame(frame);const dt=Math.min(0.05,(now-last)/1000);last=now;tAnim+=dt;
+  if(lv){
+    if(state==='play')updatePlayer(dt);
+    animate(dt);
+    const inMenu=state==='menu'||state==='levels'||state==='help'||state==='settingsMenu';scene.fog.near=inMenu?80:world.fn;scene.fog.far=inMenu?300:world.ff;
+    if(inMenu){menuT+=dt*0.07;const TW=lv.W*P,TH=lv.H*P,R=Math.max(TW,TH)*0.75;
+      camera.position.set(TW/2+Math.cos(menuT)*R,Math.max(TW,TH)*0.55,TH/2+Math.sin(menuT)*R);camera.lookAt(TW/2,0,TH/2);lamp.position.copy(camera.position);}
+    else{camera.position.set(player.x,EYE+Math.sin(bob)*0.045,player.z);camera.rotation.set(player.pitch,player.yaw,0);lamp.position.set(player.x,EYE+0.3,player.z);}
+  }
+  renderer.render(scene,camera);
+  if(state==='play'&&save.set.mini&&lv&&((tAnim*20)|0)%2===0)drawMap($('mini'),false);
+}
+function updatePlayer(dt){
+  let f=0,s=0,tr=0;
+  if(keyDown.KeyW||keyDown.ArrowUp)f+=1;if(keyDown.KeyS||keyDown.ArrowDown)f-=1;if(keyDown.KeyA)s-=1;if(keyDown.KeyD)s+=1;
+  if(keyDown.ArrowLeft||keyDown.KeyQ)tr+=1;if(keyDown.ArrowRight||keyDown.KeyE)tr-=1;
+  if(joy.id!==null){f-=joy.dy;s+=joy.dx;}
+  player.yaw+=tr*dt*2.3*save.set.sens;
+  const l=Math.hypot(f,s);if(l>1){f/=l;s/=l;}
+  const sp=BASE_SPEED*save.set.speed,sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);
+  const tx=(-sy*f+cy*s)*sp,tz=(-cy*f-sy*s)*sp;const a=1-Math.exp(-dt*14);player.vx+=(tx-player.vx)*a;player.vz+=(tz-player.vz)*a;
+  const mv=Math.hypot(player.vx,player.vz)*dt;if(l>0.05&&!timerOn)timerOn=true;
+  if(mv>0.0001){bob+=mv*3.2;if(!moveBy(player.vx*dt,player.vz*dt))return;}
+  if(timerOn){timeAcc+=dt;$('hTime').textContent=fmt(timeAcc);}
+}
+function moveBy(dx,dz){const n=Math.max(1,Math.ceil(Math.hypot(dx,dz)/0.15));
+  for(let i=0;i<n;i++){player.x+=dx/n;player.z+=dz/n;collide();const c=cellAtPlayer();if(c>=0&&c!==curCell){curCell=c;onEnter(c);if(state!=='play')return false;}}
+  if(save.set.thread)addThread();return true;}
+function addThread(){const p={x:player.x,z:player.z};if(!threadLast){threadLast=p;return;}const dx=p.x-threadLast.x,dz=p.z-threadLast.z,d=Math.hypot(dx,dz);if(d<0.3)return;
+  const o=new THREE.Object3D();o.position.set((p.x+threadLast.x)/2,0.03,(p.z+threadLast.z)/2);o.rotation.y=-Math.atan2(dz,dx);o.scale.set(d+0.04,1,1);o.updateMatrix();
+  threadMesh.setMatrixAt(threadN%THREAD_MAX,o.matrix);threadN++;threadMesh.count=Math.min(threadN,THREAD_MAX);threadMesh.instanceMatrix.needsUpdate=true;threadLast=p;}
+function animate(dt){
+  const k=1-Math.exp(-dt*6);
+  doors.forEach(d=>{d.y+=(d.ty-d.y)*k*0.6;d.g.position.y=d.y;d.g.visible=d.y>-HH+0.02;});
+  gates.forEach(g=>{g.y+=(g.ty-g.y)*k*1.3;g.g.position.y=g.y;});
+  for(const key in itemObj){const o=itemObj[key];
+    if(o.kind==='spark'||o.kind==='key'){if(o.gone){o.fade=(o.fade||0)+dt*3;const s=Math.max(0,1-o.fade);o.g.scale.set(s,s,s);o.g.position.y=o.fade*1.5;if(s<=0)o.g.visible=false;}
+      o.spin.rotation.y+=dt*1.8;o.spin.position.y=1.15+Math.sin(tAnim*2+o.c)*0.1;}
+    else if(o.kind==='portal'){o.spin.rotation.y+=dt*0.9;o.disc.rotation.z-=dt*2.5;}
+    else if(o.kind==='lever'){o.spin.rotation.y=tog?Math.PI:0;o.flash=Math.max(0,o.flash-dt*2);o.base.material.emissive=o.base.material.emissive||new THREE.Color();o.base.material.emissive.setRGB(o.flash*0.6,o.flash*0.6,o.flash*0.8);}}
+  if(exitObj){exitObj.tor.rotation.z+=dt*(sparksLeft===0?0.8:0.15);exitObj.g.children[0].rotation.y=0;}
+  if(hintTime>0){hintTime-=dt;hintMesh.material.opacity=Math.min(0.85,hintTime)*(0.75+0.25*Math.sin(tAnim*6));if(hintTime<=0)hintMesh.count=0;}
+}
+
+// ---------- экраны ----------
+const screens=['menu','levels','settings','help','tip','pause','mapview','win'];
+function show(id){screens.forEach(s=>{$(s).hidden=s!==id;});$('hud').hidden=!(state==='play'||state==='pause'||state==='map'||state==='tip'||state==='win');}
+function unlocked(L){return L===1||(save.stars[L-1]||0)>0||(save.stars[L]||0)>0;}
+function nextLevel(){for(let L=1;L<=LEVEL_COUNT;L++){if(!save.stars[L])return L;}return LEVEL_COUNT;}
+function menu(){exitLock();state='menu';const L=nextLevel();if(!lv||LNUM!==L)buildLevel(L);seen&&seen.fill(0);show('menu');
+  let done=0,st=0;for(let L2=1;L2<=LEVEL_COUNT;L2++){if(save.stars[L2]){done++;st+=save.stars[L2];}}
+  $('mProgress').textContent='Пройдено '+done+' из '+LEVEL_COUNT;$('mStars').textContent='✦ '+st+' / '+LEVEL_COUNT*3;
+  $('mPlay').textContent=done?'Продолжить · уровень '+L:'Играть';}
+function exitLock(){try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}}
+function startLevel(L){audio();buildLevel(L);if(TIPS[L]&&!save.tips[L]){const t=TIPS[L];$('tipEyebrow').textContent='Уровень '+L+' · '+t[0];$('tipTitle').textContent=t[1];$('tipText').textContent=t[2];state='tip';show('tip');$('tipGo').focus();}
+  else{state='play';show(null);}updateHUD();$('hTime').textContent='0:00';}
+$('tipGo').onclick=()=>{save.tips[LNUM]=1;persist();state='play';show(null);};
+function pause(){if(state!=='play')return;exitLock();state='pause';$('pTitle').textContent='Уровень '+LNUM+' · '+world.name;$('pEyebrow').textContent='Пауза · '+fmt(timeAcc);show('pause');}
+function resume(){state='play';show(null);last=performance.now();}
+function openMap(){if(state!=='play')return;exitLock();state='map';show('mapview');drawMap($('bigmap'),true);}
+function closeMap(){state='play';show(null);}
+function win(){exitLock();state='win';SND.win();const t=timeAcc;let st=t<=par?3:t<=par*1.7?2:1;if(hintUsed)st=Math.min(st,2);
+  const prev=save.stars[LNUM]||0;save.stars[LNUM]=Math.max(prev,st);const pb=save.best[LNUM];if(!pb||t<pb)save.best[LNUM]=t;persist();
+  $('wEyebrow').textContent='Уровень '+LNUM+' · '+world.name;$('wTitle').textContent=st===3?'Чисто пройдено':st===2?'Выход найден':'Выбрался';
+  $('wStars').innerHTML=[0,1,2].map(i=>'<span class="'+(i<st?'':'off')+'">✦</span>').join('');
+  $('wTime').textContent=fmt(t);$('wPar').textContent=fmt(par);$('wBest').textContent=fmt(save.best[LNUM]);
+  $('wNote').textContent=hintUsed?'Была подсказка, поэтому максимум две звезды.':st<3?'Три звезды — пройти быстрее цели.':'';
+  $('wNext').hidden=LNUM>=LEVEL_COUNT;$('wNext').textContent=LNUM>=LEVEL_COUNT?'':'Уровень '+(LNUM+1);
+  if(LNUM>=LEVEL_COUNT)$('wNote').textContent+=' Это был последний уровень. Ты прошёл всю нить!';
+  show('win');}
+$('wNext').onclick=()=>startLevel(LNUM+1);$('wAgain').onclick=()=>startLevel(LNUM);$('wMenu').onclick=()=>{openLevels();};
+$('mPlay').onclick=()=>startLevel(nextLevel());
+$('mLevels').onclick=()=>openLevels();
+$('lvBack').onclick=()=>menu();
+$('mHelp').onclick=()=>{state='help';show('help');};$('helpBack').onclick=()=>menu();
+let settingsFrom='menu';
+$('mSettings').onclick=()=>{settingsFrom='menu';state='settingsMenu';syncSettings();show('settings');};
+$('pSettings').onclick=()=>{settingsFrom='pause';state='pause';syncSettings();show('settings');};
+$('setBack').onclick=()=>{if(lv){par=lv.par*P/(BASE_SPEED*save.set.speed)*1.3+4;updateHUD();}if(settingsFrom==='pause'){state='pause';show('pause');}else menu();};
+$('pResume').onclick=resume;$('pRestart').onclick=()=>{resetPlay();$('hTime').textContent='0:00';resume();};$('pMenu').onclick=()=>menu();
+$('bPause').onclick=pause;$('bMap').onclick=openMap;$('bHint').onclick=showHint;$('mapClose').onclick=closeMap;
+function openLevels(){exitLock();if(state!=='menu'&&state!=='levels'){menuT=0;}state='levels';const box=$('worlds');box.innerHTML='';
+  WORLDS.forEach((w,wi)=>{const sec=document.createElement('div');sec.className='world';let st=0;for(let i=1;i<=10;i++)st+=save.stars[wi*10+i]||0;
+    sec.innerHTML='<div class="world-h"><h3>'+(wi+1)+'. '+w.name+'</h3><span class="muted stat">✦ '+st+'/30</span></div><div class="muted" style="font-size:13px;margin-top:-4px">'+w.desc+'</div>';
+    const tl=document.createElement('div');tl.className='tiles';
+    for(let i=1;i<=10;i++){const L=wi*10+i,b=document.createElement('button');b.type='button';const u=unlocked(L),s=save.stars[L]||0;b.className='tile'+(u?'':' locked')+(L===nextLevel()?' cur':'');
+      b.innerHTML='<span>'+L+'</span><span class="st">'+(s?'✦'.repeat(s):'')+'</span>';b.setAttribute('aria-label','Уровень '+L+(u?'':' закрыт'));
+      if(u)b.onclick=()=>startLevel(L);tl.appendChild(b);}
+    sec.appendChild(tl);box.appendChild(sec);});
+  show('levels');}
+// настройки
+function syncSettings(){$('sSpeed').value=save.set.speed;$('oSpeed').textContent='×'+String(save.set.speed).replace('.',',');$('sSens').value=save.set.sens;$('oSens').textContent='×'+String(save.set.sens).replace('.',',');
+  ['mini','thread','sound','quality'].forEach(k=>$('t'+k[0].toUpperCase()+k.slice(1)).setAttribute('aria-pressed',save.set[k]?'true':'false'));}
+$('sSpeed').oninput=e=>{save.set.speed=+e.target.value;persist();syncSettings();};
+$('sSens').oninput=e=>{save.set.sens=+e.target.value;persist();syncSettings();};
+['mini','thread','sound','quality'].forEach(k=>{$('t'+k[0].toUpperCase()+k.slice(1)).onclick=()=>{save.set[k]=!save.set[k];persist();syncSettings();if(k==='quality')applyQuality();if(k==='thread'&&threadMesh)threadMesh.visible=save.set.thread;updateHUD();};});
+
+applyQuality();menu();requestAnimationFrame(frame);
+window.__nit={moveBy,cellX:c=>cellX(c),cellZ:c=>cellZ(c),get keys(){return keys},get tog(){return tog},get sparkLeftArr(){return sparkLeftArr},startLevel,get state(){return state},get lv(){return lv},player,showHint,win:()=>win(),get cell(){return curCell},onEnter};
+})();
+</script>

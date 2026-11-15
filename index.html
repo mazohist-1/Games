@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Игротека</title>
+<meta name="description" content="Все браузерные игры в одном месте: выбор игры, аккаунт, облачные сохранения и рейтинг.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff7a45'/%3E%3Cpath d='M9 12h14v9a3 3 0 0 1-3 3h-8a3 3 0 0 1-3-3z' fill='%23fff'/%3E%3Ccircle cx='13' cy='17' r='1.6' fill='%23ff7a45'/%3E%3Ccircle cx='19' cy='17' r='1.6' fill='%23ff7a45'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<script src="assets/hub.js"></script>
+<style>
+:root{
+  --bg:#f4f1ea;--surface:#fffdf8;--surface-2:#efebe2;--ink:#1d1b17;--muted:#6b665c;--line:#ddd7ca;
+  --accent:#e8582a;--accent-ink:#fff;--good:#1f9d63;--warn:#b7791f;--bad:#c53a2c;
+  --shadow:0 1px 2px rgba(40,30,10,.06),0 8px 24px -12px rgba(40,30,10,.18);
+  --f-head:"Unbounded",system-ui,sans-serif;--f-body:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121317;--surface:#1b1d23;--surface-2:#24272f;--ink:#f1eee8;--muted:#a19c92;--line:#2f323b;
+  --accent:#ff7a45;--accent-ink:#1a0d06;--good:#3ecf8e;--warn:#f5b54a;--bad:#ff6b5b;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.7);color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#121317;--surface:#1b1d23;--surface-2:#24272f;--ink:#f1eee8;--muted:#a19c92;--line:#2f323b;
+  --accent:#ff7a45;--accent-ink:#1a0d06;--good:#3ecf8e;--warn:#f5b54a;--bad:#ff6b5b;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.7);color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:500 15px/1.5 var(--f-body);min-height:100vh;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+@media (min-width:720px){.wrap{padding:0 28px}}
+
+/* шапка */
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:12px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:800 18px/1 var(--f-head);letter-spacing:-.01em}
+.brand svg{width:30px;height:30px;flex:none}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700;text-decoration:none;white-space:nowrap;transition:transform .08s,background .15s,border-color .15s}
+.btn:hover{border-color:color-mix(in srgb,var(--ink) 30%,var(--line))}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent}
+.btn.small{height:34px;padding:0 12px;border-radius:10px;font-size:14px}
+.btn.danger{color:var(--bad)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.btn svg{width:18px;height:18px}
+.icon-btn{width:40px;padding:0}
+.avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:800 12px/1 var(--f-head);background:var(--accent);color:var(--accent-ink);flex:none}
+#accName{max-width:14ch;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:520px){#accName{display:none}.hide-sm{display:none}}
+
+/* приветствие */
+.hero{padding:36px 0 18px;display:grid;gap:18px}
+.hero h1{margin:0;font:800 clamp(30px,6vw,52px)/1.02 var(--f-head);letter-spacing:-.02em}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p{margin:0;color:var(--muted);max-width:56ch}
+.summary{display:flex;flex-wrap:wrap;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:14px}
+.pill b{font:800 15px/1 var(--f-head);font-variant-numeric:tabular-nums}
+.pill .k{color:var(--muted);font-weight:600}
+
+/* продолжить */
+.continue{display:flex;align-items:center;gap:14px;padding:12px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);text-decoration:none;max-width:520px}
+.continue .cv{width:56px;height:56px;border-radius:14px;flex:none}
+.continue .t{flex:1;min-width:0}
+.continue .t small{display:block;color:var(--muted);font-weight:600}
+.continue .t strong{font:800 18px/1.2 var(--f-head)}
+
+/* фильтры */
+.filters{display:flex;gap:8px;overflow-x:auto;padding:6px 0 18px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{flex:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;cursor:pointer;font-weight:700;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* сетка игр */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px;padding-bottom:40px}
+.card{display:flex;flex-direction:column;border-radius:20px;background:var(--surface);border:1px solid var(--line);overflow:hidden;box-shadow:var(--shadow);text-decoration:none;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-3px)}
+.card:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.cv{position:relative;aspect-ratio:16/9;display:grid;place-items:center;overflow:hidden;background:var(--c1)}
+.cv::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 85% 10%,var(--c2),transparent 60%),radial-gradient(90% 80% at 0% 100%,var(--c3),transparent 65%)}
+.cv svg{position:relative;width:46%;height:auto;max-height:70%;color:#fff;filter:drop-shadow(0 6px 14px rgba(0,0,0,.25))}
+.continue .cv svg{width:70%}
+.cv .tag{position:absolute;left:10px;top:10px;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.28);color:#fff;font-size:12px;font-weight:700;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.cv .tag.d3{left:auto;right:10px}
+.body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.body h3{margin:0;font:800 20px/1.15 var(--f-head);letter-spacing:-.01em}
+.body p{margin:0;color:var(--muted);font-size:14px;flex:1}
+.prog{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--muted)}
+.bar{flex:1;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.prog .n{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+@media (max-width:560px){
+  .grid{grid-template-columns:1fr;gap:12px}
+  .card{flex-direction:row;border-radius:18px}
+  .card .cv{aspect-ratio:auto;width:104px;flex:none}
+  .card .cv svg{width:62%}
+  .card .cv .tag{display:none}
+  .body{padding:12px 14px;gap:4px}
+  .body h3{font-size:17px}
+  .body p{font-size:13px;line-height:1.4}
+  .hero{padding:24px 0 12px}
+}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;padding:18px 0 32px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between}
+
+/* окна */
+dialog{border:none;padding:0;border-radius:22px;background:var(--surface);color:var(--ink);width:min(460px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-shadow:0 30px 80px -20px rgba(0,0,0,.5)}
+dialog.wide{width:min(620px,calc(100vw - 24px))}
+dialog::backdrop{background:rgba(10,10,14,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.dlg{display:flex;flex-direction:column;max-height:calc(100dvh - 24px)}
+.dlg-h{display:flex;align-items:center;gap:10px;padding:18px 18px 10px 22px}
+.dlg-h h2{margin:0;flex:1;font:800 21px/1.2 var(--f-head)}
+.dlg-b{padding:4px 22px 22px;overflow:auto}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:var(--surface-2);margin-bottom:16px}
+.tabs button{height:36px;border:none;border-radius:9px;background:transparent;cursor:pointer;font-weight:700;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+form{display:grid;gap:12px}
+label{display:grid;gap:5px;font-size:13px;font-weight:700;color:var(--muted)}
+input[type=text],input[type=password]{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:16px;font-weight:600;outline:none}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.err{min-height:20px;margin:0;font-size:14px;font-weight:700;color:var(--bad)}
+.ok{color:var(--good)}
+.note{padding:12px 14px;border-radius:12px;background:var(--surface-2);font-size:14px;color:var(--muted)}
+.note code{font-size:13px;color:var(--ink);word-break:break-all}
+.sect{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.sect h3{margin:0 0 10px;font:800 15px/1.2 var(--f-head)}
+.prof-top{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.prof-top .avatar{width:54px;height:54px;font-size:22px}
+.prof-top strong{font:800 20px/1.2 var(--f-head);display:block}
+.prof-top small{color:var(--muted);font-weight:600}
+.stats{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.stats li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--surface-2);font-size:14px;font-weight:700}
+.stats li .sw{width:12px;height:12px;border-radius:4px;flex:none}
+.stats li span{flex:1}
+.stats li em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.lead{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.lead li{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface-2)}
+.lead li.me{outline:2px solid var(--accent)}
+.lead .rk{font:800 15px/1 var(--f-head);text-align:center;color:var(--muted)}
+.lead li:nth-child(1) .rk{color:#d4a017}.lead li:nth-child(2) .rk{color:#9aa4ae}.lead li:nth-child(3) .rk{color:#c27a3a}
+.lead .nm{font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lead .nm small{display:block;font-weight:600;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lead .sc{font:800 17px/1 var(--f-head);font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);text-align:center;padding:20px 0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;z-index:50;padding:12px 18px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:700;box-shadow:var(--shadow);transition:.25s;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M8 12.5h16v8a3.5 3.5 0 0 1-3.5 3.5h-9A3.5 3.5 0 0 1 8 20.5z" fill="#fff"/><circle cx="13" cy="17.5" r="1.7" fill="var(--accent)"/><circle cx="19" cy="17.5" r="1.7" fill="var(--accent)"/><path d="M12 12.5 14 8h4l2 4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+      Игротека
+    </a>
+    <div class="spacer"></div>
+    <button class="btn ghost small" id="btnLeaders" type="button" title="Рейтинг игроков">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+      <span class="hide-sm">Рейтинг</span>
+    </button>
+    <button class="btn small" id="btnAcc" type="button">
+      <span class="avatar" id="accAva" hidden></span>
+      <span id="accName">Войти</span>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1 id="hello">Во что <em>сыграем</em>?</h1>
+    <p id="lede">11 игр: головоломки, стратегия, 3D-миры и тест на IQ. Прогресс сохраняется в браузере, а с аккаунтом — на сервере, и его видно на любом устройстве.</p>
+    <div class="summary" id="summary"></div>
+    <a class="continue" id="continue" hidden></a>
+  </section>
+  <nav class="filters" id="filters" aria-label="Жанры"></nav>
+  <section class="grid" id="grid" aria-live="polite"></section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span id="srvState">Проверяю сервер…</span>
+    <span>Все игры работают в браузере, телефон тоже подойдёт.</span>
+  </div>
+</footer>
+
+<!-- вход и регистрация -->
+<dialog id="dlgAuth" aria-labelledby="authTitle">
+  <div class="dlg">
+    <div class="dlg-h"><h2 id="authTitle">Аккаунт</h2><button class="btn ghost icon-btn" type="button" data-close aria-label="Закрыть">✕</button></div>
+    <div class="dlg-b">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" aria-selected="true" data-tab="login">Вход</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="register">Регистрация</button>
+      </div>
+      <form id="fAuth" novalidate>
+        <label>Логин<input type="text" name="login" autocomplete="username" autocapitalize="off" spellcheck="false" required minlength="3" maxlength="24"></label>
+        <label data-reg hidden>Имя в рейтинге<input type="text" name="name" maxlength="32" placeholder="Как тебя показывать другим"></label>
+        <label>Пароль<input type="password" name="password" autocomplete="current-password" required minlength="6"></label>
+        <label data-reg hidden>Пароль ещё раз<input type="password" name="password2" autocomplete="new-password"></label>
+        <p class="hint" data-reg hidden>Прогресс, который уже есть в этом браузере, перейдёт в новый аккаунт.</p>
+        <p class="err" id="authErr" role="alert"></p>
+        <button class="btn primary" type="submit" id="authGo">Войти</button>
+      </form>
+      <div class="note" id="authOffline" hidden>
+        Аккаунты работают, когда игротека запущена через <code>python3 server.py</code>. Сейчас сайт открыт как обычные файлы, поэтому прогресс хранится только в этом браузере.
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<!-- профиль -->
+<dialog id="dlgProfile" class="wide" aria-labelledby="profTitle">
+  <div class="dlg">
+    <div class="dlg-h"><h2 id="profTitle">Профиль</h2><button class="btn ghost icon-btn" type="button" data-close aria-label="Закрыть">✕</button></div>
+    <div class="dlg-b">
+      <div class="prof-top"><span class="avatar" id="profAva"></span><div><strong id="profName"></strong><small id="profMeta"></small></div></div>
+      <div class="summary" id="profSummary" style="margin:12px 0 4px"></div>
+      <div class="sect">
+        <h3>Прогресс по играм</h3>
+        <ul class="stats" id="profStats"></ul>
+      </div>
+      <div class="sect">
+        <h3>Имя в рейтинге</h3>
+        <form id="fName" class="row" style="display:flex">
+          <input type="text" name="name" maxlength="32" style="flex:1;min-width:160px">
+          <button class="btn" type="submit">Сохранить</button>
+        </form>
+        <p class="err" id="nameErr"></p>
+      </div>
+      <div class="sect">
+        <h3>Сменить пароль</h3>
+        <form id="fPass">
+          <input type="password" name="old" placeholder="Старый пароль" autocomplete="current-password">
+          <input type="password" name="new" placeholder="Новый пароль (от 6 символов)" autocomplete="new-password">
+          <button class="btn" type="submit">Сменить пароль</button>
+          <p class="err" id="passErr"></p>
+        </form>
+      </div>
+      <div class="sect row">
+        <button class="btn" type="button" id="btnLogout">Выйти из аккаунта</button>
+        <button class="btn ghost danger" type="button" id="btnDelete">Удалить аккаунт</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<!-- рейтинг -->
+<dialog id="dlgLeaders" aria-labelledby="leadTitle">
+  <div class="dlg">
+    <div class="dlg-h"><h2 id="leadTitle">Рейтинг игроков</h2><button class="btn ghost icon-btn" type="button" data-close aria-label="Закрыть">✕</button></div>
+    <div class="dlg-b">
+      <p class="hint" style="margin-bottom:12px">Очки = все звёзды во всех играх + 3 за каждую собранную картину в «Мозаике» + 15 за каждую вершину эволюции в «Истоке» и «Царствах».</p>
+      <ol class="lead" id="leadList"><li class="empty">Загрузка…</li></ol>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+const Hub = window.GamesHub;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const read = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+const plural = (n, a, b, c) => { n = Math.abs(n) % 100; const m = n % 10; return n > 10 && n < 20 ? c : m > 1 && m < 5 ? b : m === 1 ? a : c; };
+
+/* значки игр: простые линии поверх цветной обложки */
+const ICON = {
+  rubezhi:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 36 26 14l14 20 12-12"/><circle cx="12" cy="36" r="5" fill="currentColor"/><circle cx="26" cy="14" r="5"/><circle cx="40" cy="34" r="5" fill="currentColor"/><circle cx="52" cy="22" r="5"/><path d="M26 9V3l7 3-7 3"/></svg>',
+  takt:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><rect x="6" y="30" width="14" height="10" rx="2"/><rect x="25" y="30" width="14" height="10" rx="2" fill="currentColor"/><rect x="44" y="30" width="14" height="10" rx="2"/><path d="M13 22c4-14 18-14 19 0M32 22c4-14 18-14 19 0" stroke-dasharray="3 5"/></svg>',
+  zaly:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><path d="M24 4h16l12 12v16L40 44H24L12 32V16z"/><circle cx="32" cy="18" r="5"/><circle cx="32" cy="31" r="6"/></svg>',
+  polki:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 18h52M6 40h52"/><rect x="10" y="6" width="9" height="12" rx="2" fill="currentColor"/><circle cx="29" cy="12" r="5"/><path d="M40 18l5-11 5 11z" fill="currentColor"/><rect x="14" y="28" width="10" height="12" rx="5"/><rect x="30" y="29" width="9" height="11" rx="2" fill="currentColor"/><circle cx="48" cy="34" r="5" fill="currentColor"/></svg>',
+  nit:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h52v36H6zM6 18h16M34 6v12h12M46 30H22v12M34 30v-6"/><path d="M12 12h22v12H16v12h24" stroke-width="2.4" stroke-dasharray="1 4.5"/></svg>',
+  razbor:'<svg viewBox="0 0 64 48" fill="currentColor"><rect x="10" y="6" width="10" height="10" rx="2"/><rect x="22" y="6" width="10" height="10" rx="2" opacity=".55"/><rect x="34" y="6" width="10" height="10" rx="2"/><rect x="10" y="18" width="10" height="10" rx="2" opacity=".55"/><rect x="22" y="18" width="10" height="10" rx="2"/><rect x="34" y="18" width="10" height="10" rx="2" opacity=".55"/><rect x="22" y="30" width="10" height="10" rx="2" opacity=".55"/><rect x="46" y="28" width="10" height="10" rx="2" transform="rotate(14 51 33)"/></svg>',
+  karusel:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3"><rect x="8" y="10" width="48" height="28" rx="14"/><circle cx="20" cy="10" r="4" fill="currentColor"/><circle cx="34" cy="10" r="4" fill="currentColor"/><circle cx="56" cy="24" r="4" fill="currentColor"/><circle cx="28" cy="38" r="4" fill="currentColor"/><circle cx="8" cy="24" r="4"/></svg>',
+  iskry:'<svg viewBox="0 0 64 48" fill="currentColor"><path d="M32 4l3 10 10 3-10 3-3 10-3-10-10-3 10-3z"/><path d="M49 24l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/><path d="M15 26l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><circle cx="46" cy="9" r="2.5"/><circle cx="20" cy="12" r="2"/></svg>',
+  valiki:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="34" height="12" rx="4" fill="currentColor"/><path d="M42 12h8v12H28v8"/><rect x="24" y="32" width="8" height="12" rx="2"/><path d="M8 22h14" stroke-dasharray="3 4"/></svg>',
+  istok:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M32 4C22 18 18 25 18 31a14 14 0 0 0 28 0c0-6-4-13-14-27z"/><circle cx="28" cy="30" r="4" fill="currentColor"/><path d="M36 22c2 2 3 4 3 7"/></svg>',
+  tsarstva:'<svg viewBox="0 0 64 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M10 36 6 12l14 10 12-16 12 16 14-10-4 24z"/><path d="M10 42h44"/><circle cx="32" cy="26" r="4" fill="currentColor"/></svg>'
+};
+
+/* описание игр; prog() читает их сохранения из localStorage */
+const starsOf = (key, field = 'stars') => { const s = read(key, null); const o = (s && s[field]) || {}; let lv = 0, st = 0; for (const k in o) { const v = +o[k] || 0; if (v > 0) { lv++; st += v; } } return { lv, st }; };
+const GAMES = [
+  { id:'tsarstva', name:'Царства', genre:'world', d3:true, c:['#1f6f4a','#7bd389','#0c3b4d'], text:'Эволюция 2.0: начни клеткой и стань зверем, растением, грибом или колонией в огромном 3D-мире.',
+    prog(){ const n = read('tsarstva-chron', []).length; return { crowns:n, line: n ? n + ' ' + plural(n,'вершина','вершины','вершин') + ' эволюции' : 'Ещё не начато' }; } },
+  { id:'istok', name:'Исток', genre:'world', d3:true, c:['#0f4c6b','#4fc3d9','#123a2c'], text:'Эволюция организма на острове: от моря до суши и бездны, 34 мутации и шесть вершин.',
+    prog(){ const n = read('istok-chron', []).length; return { crowns:n, line: n ? n + ' ' + plural(n,'вершина','вершины','вершин') + ' эволюции' : 'Ещё не начато' }; } },
+  { id:'nit', name:'Нить', genre:'puzzle', d3:true, total:60, c:['#2a2140','#d9a441','#11131f'], text:'3D-лабиринт от первого лица. Золотая нить, ключи, решётки и порталы. 60 уровней.',
+    prog(){ return starsOf('nit-save-v1'); } },
+  { id:'iskry', name:'Искры', genre:'action', total:120, c:['#3b1d5e','#ff9f1c','#c2185b'], text:'Ковш сыплет искры через ворота, а пушка робота Болта отбивает волны слизней. 120 уровней.',
+    prog(){ return starsOf('iskry-save-v1'); } },
+  { id:'rubezhi', name:'Рубежи', genre:'strategy', total:40, c:['#4a3b22','#e3b448','#2f5d3a'], text:'Захват территории: узлы растят отряды, соперники с ИИ наступают. 40 уровней.',
+    prog(){ return starsOf('rubezhi-v1'); } },
+  { id:'karusel', name:'Карусель', genre:'puzzle', total:60, c:['#164e63','#f472b6','#facc15'], text:'Шарики едут по кольцевой ленте, а стаканчики забирают свой цвет. 60 уровней.',
+    prog(){ return starsOf('karusel-save'); } },
+  { id:'valiki', name:'Валики', genre:'puzzle', total:100, c:['#7c2d12','#fb923c','#2563eb'], text:'Валик красит строку или столбец. Собери образец, помня, что последний мазок сверху. 100 уровней.',
+    prog(){ return starsOf('valiki-v1'); } },
+  { id:'polki', name:'Полки', genre:'puzzle', total:60, c:['#5b3a1a','#f6c177','#9a3412'], text:'Сортировка предметов: три одинаковых на полке исчезают. 60 уровней.',
+    prog(){ return starsOf('polki-v1'); } },
+  { id:'takt', name:'Такт', genre:'puzzle', total:60, c:['#1e1b4b','#22d3ee','#a21caf'], text:'Прыжки в ритме 1·2·3 по хрупким плитам за кристаллами. 60 уровней.',
+    prog(){ return starsOf('takt-progress-v1', 'solved'); } },
+  { id:'razbor', name:'Мозаика', genre:'puzzle', total:264, c:['#0f766e','#fde047','#be123c'], text:'Мозаичный разбор: собирай картины из цветных плиток. 264 картины.',
+    prog(){ const p = read('mozaika-progress', {}); const n = Object.keys((p && p.done) || {}).length; return { lv:n, pics:n, line: n ? 'Собрано ' + n + ' ' + plural(n,'картина','картины','картин') : null }; } },
+  { id:'zaly', name:'Восемь залов', genre:'test', c:['#334155','#a5b4fc','#0f172a'], text:'Игровой тест на IQ: 8 залов по 5 заданий, экспресс-режим и тренировка.',
+    prog(){ const b = read('8z_best', null); const h = read('8z_hist', []); return { iq:b, line: b ? 'Лучший IQ: ' + b + ' · попыток: ' + (Array.isArray(h) ? h.length : 0) : 'Ещё не проходил' }; } }
+];
+const GENRES = [['all','Все'],['puzzle','Головоломки'],['world','3D-миры'],['strategy','Стратегия'],['action','Экшен'],['test','Тест']];
+
+function progressOf(g){
+  let p = {}; try { p = g.prog() || {}; } catch (e) {}
+  if (!p.line) {
+    if (g.total) p.line = p.lv ? 'Пройдено ' + p.lv + ' из ' + g.total + (p.st ? ' · ★ ' + p.st : '') : 'Ещё не начато';
+    else p.line = 'Ещё не начато';
+  }
+  p.pct = g.total && p.lv ? Math.min(100, Math.round(p.lv / g.total * 100)) : 0;
+  return p;
+}
+function totals(){
+  let stars = 0, levels = 0, crowns = 0, pics = 0, iq = null; const per = {};
+  GAMES.forEach(g => {
+    const p = progressOf(g);
+    stars += p.st || 0; levels += p.lv || 0; crowns += p.crowns || 0; pics += p.pics || 0;
+    if (p.iq) iq = p.iq;
+    per[g.id] = { lv:p.lv || 0, st:p.st || 0, crowns:p.crowns || 0, iq:p.iq || null, line:p.line };
+  });
+  return { stars, levels, crowns, pics, iq, per, score: stars + pics * 3 + crowns * 15 };
+}
+
+let filter = 'all'; try { filter = localStorage.getItem('gh-filter') || 'all'; } catch (e) {}
+function cover(g, extra = ''){
+  return `<div class="cv" style="--c1:${g.c[0]};--c2:${g.c[1]};--c3:${g.c[2]}">${extra}${ICON[g.id]}</div>`;
+}
+function render(){
+  const t = totals();
+  $('#filters').innerHTML = GENRES.map(([k, v]) => `<button class="chip" type="button" data-f="${k}" aria-pressed="${k === filter}">${v}</button>`).join('');
+  const list = GAMES.filter(g => filter === 'all' || g.genre === filter);
+  $('#grid').innerHTML = list.map(g => {
+    const p = progressOf(g);
+    const tag = GENRES.find(x => x[0] === g.genre)[1];
+    return `<a class="card" href="games/${g.id}.html">
+      ${cover(g, `<span class="tag">${tag}</span>${g.d3 ? '<span class="tag d3">3D</span>' : ''}`)}
+      <div class="body"><h3>${g.name}</h3><p>${g.text}</p>
+        <div class="prog">${g.total ? `<span class="bar"><i style="width:${p.pct}%"></i></span>` : ''}<span class="n">${esc(p.line)}</span></div>
+      </div></a>`;
+  }).join('');
+  const pills = [];
+  pills.push(`<span class="pill"><b>${t.score}</b><span class="k">${plural(t.score,'очко','очка','очков')}</span></span>`);
+  pills.push(`<span class="pill"><b>★ ${t.stars}</b><span class="k">${plural(t.stars,'звезда','звезды','звёзд')}</span></span>`);
+  pills.push(`<span class="pill"><b>${t.levels}</b><span class="k">${plural(t.levels,'уровень','уровня','уровней')}</span></span>`);
+  if (t.crowns) pills.push(`<span class="pill"><b>${t.crowns}</b><span class="k">${plural(t.crowns,'вершина','вершины','вершин')}</span></span>`);
+  if (t.iq) pills.push(`<span class="pill"><b>${t.iq}</b><span class="k">IQ</span></span>`);
+  $('#summary').innerHTML = pills.join('');
+  const last = read('gh-last', null);
+  const lg = last && GAMES.find(g => last.file === g.id + '.html');
+  const cont = $('#continue');
+  if (lg) {
+    cont.hidden = false; cont.href = 'games/' + lg.id + '.html';
+    cont.innerHTML = cover(lg) + `<div class="t"><small>Продолжить</small><strong>${lg.name}</strong></div><span class="btn primary small">Играть</span>`;
+  } else cont.hidden = true;
+  return t;
+}
+$('#filters').addEventListener('click', e => {
+  const b = e.target.closest('[data-f]'); if (!b) return;
+  filter = b.dataset.f; try { localStorage.setItem('gh-filter', filter); } catch (er) {}
+  render();
+});
+
+/* ---------- аккаунт ---------- */
+let online = false, me = Hub.user();
+const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600); };
+const initials = n => (String(n || '?').trim()[0] || '?').toUpperCase();
+
+function paintAccount(){
+  const ava = $('#accAva');
+  if (me) { ava.hidden = false; ava.textContent = initials(me.name); $('#accName').textContent = me.name; $('#btnAcc').title = 'Профиль'; $('#hello').innerHTML = 'Привет, <em>' + esc(me.name) + '</em>!'; }
+  else { ava.hidden = true; $('#accName').textContent = 'Войти'; $('#btnAcc').title = 'Вход и регистрация'; $('#hello').innerHTML = 'Во что <em>сыграем</em>?'; }
+  $('#srvState').textContent = !online ? 'Сервер аккаунтов не запущен: прогресс хранится только в этом браузере.'
+    : me ? 'Вход выполнен: прогресс сохраняется на сервере.' : 'Войди, чтобы прогресс сохранялся на сервере.';
+}
+
+function pushStats(){
+  if (!me || !online) return;
+  const t = totals();
+  const sig = JSON.stringify([t.score, t.per]);
+  if (read('gh-stats-sig', null) === sig) return;
+  Hub.api('stats', { stats: { stars:t.stars, levels:t.levels, crowns:t.crowns, pics:t.pics, iq:t.iq }, score: t.score })
+    .then(() => { try { localStorage.setItem('gh-stats-sig', JSON.stringify(sig)); } catch (e) {} }, () => {});
+}
+
+async function boot(){
+  render();
+  try {
+    const r = await Hub.api('me');
+    online = true;
+    if (r.user) { me = r.user; Hub.setUser(r.user); }
+    else if (me) { Hub.drop(); me = null; toast('Сессия закончилась, войди ещё раз'); }
+  } catch (e) { online = false; }
+  paintAccount(); render(); pushStats();
+}
+
+/* окна */
+document.querySelectorAll('dialog').forEach(d => {
+  d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
+});
+let mode = 'login';
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.tabs [data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === m));
+  document.querySelectorAll('[data-reg]').forEach(el => el.hidden = m !== 'register');
+  $('#authGo').textContent = m === 'login' ? 'Войти' : 'Создать аккаунт';
+  $('#fAuth').password.autocomplete = m === 'login' ? 'current-password' : 'new-password';
+  $('#authErr').textContent = '';
+}
+document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) setMode(b.dataset.tab); });
+$('#btnAcc').addEventListener('click', () => {
+  if (me) return openProfile();
+  $('#authOffline').hidden = online; $('#fAuth').hidden = !online; document.querySelector('.tabs').hidden = !online;
+  setMode(mode); $('#dlgAuth').showModal();
+  if (online) setTimeout(() => $('#fAuth').login.focus(), 50);
+});
+$('#fAuth').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, err = $('#authErr'); err.textContent = '';
+  const login = f.login.value.trim(), pw = f.password.value;
+  if (login.length < 3) return err.textContent = 'Логин — минимум 3 символа';
+  if (pw.length < 6) return err.textContent = 'Пароль — минимум 6 символов';
+  if (mode === 'register' && pw !== f.password2.value) return err.textContent = 'Пароли не совпадают';
+  const btn = $('#authGo'); btn.disabled = true;
+  try {
+    me = mode === 'login' ? await Hub.login(login, pw) : await Hub.register(login, pw, f.name.value.trim());
+    try { localStorage.removeItem('gh-stats-sig'); } catch (er) {}
+    $('#dlgAuth').close(); f.reset();
+    toast(mode === 'login' ? 'С возвращением, ' + me.name + '!' : 'Аккаунт создан. Прогресс сохраняется на сервере');
+    paintAccount(); render(); pushStats();
+  } catch (x) { err.textContent = (x && x.error) || 'Не получилось, попробуй ещё раз'; }
+  btn.disabled = false;
+});
+
+function openProfile(){
+  const t = totals();
+  $('#profAva').textContent = initials(me.name);
+  $('#profName').textContent = me.name;
+  const since = me.created ? new Date(me.created * 1000).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' }) : '';
+  $('#profMeta').textContent = '@' + me.login + (since ? ' · с ' + since : '');
+  $('#profSummary').innerHTML = $('#summary').innerHTML;
+  $('#profStats').innerHTML = GAMES.map(g => `<li><i class="sw" style="background:${g.c[1]}"></i><span>${g.name}</span><em>${esc(t.per[g.id].line)}</em></li>`).join('');
+  $('#fName').name.value = me.name; $('#nameErr').textContent = ''; $('#passErr').textContent = '';
+  $('#dlgProfile').showModal();
+}
+$('#fName').addEventListener('submit', async e => {
+  e.preventDefault();
+  try { const r = await Hub.api('profile', { name: e.target.name.value }); me = r.user; Hub.setUser(me); paintAccount(); $('#profName').textContent = me.name; $('#profAva').textContent = initials(me.name); toast('Имя сохранено'); }
+  catch (x) { $('#nameErr').textContent = x.error || 'Ошибка'; }
+});
+$('#fPass').addEventListener('submit', async e => {
+  e.preventDefault(); const f = e.target, err = $('#passErr'); err.className = 'err';
+  try { await Hub.api('password', { old: f.old.value, new: f.new.value }); f.reset(); err.className = 'err ok'; err.textContent = 'Пароль изменён. На других устройствах нужно войти заново.'; }
+  catch (x) { err.textContent = x.error || 'Ошибка'; }
+});
+$('#btnLogout').addEventListener('click', async () => {
+  await Hub.logout(); me = null; $('#dlgProfile').close();
+  try { localStorage.removeItem('gh-last'); localStorage.removeItem('gh-stats-sig'); } catch (e) {}
+  toast('Ты вышел. Прогресс остался в аккаунте'); paintAccount(); render();
+});
+$('#btnDelete').addEventListener('click', async () => {
+  const pw = prompt('Аккаунт и все сохранения на сервере удалятся навсегда. Введи пароль, чтобы подтвердить:');
+  if (!pw) return;
+  try { await Hub.api('delete-account', { password: pw }); Hub.drop(); me = null; $('#dlgProfile').close(); toast('Аккаунт удалён'); paintAccount(); render(); }
+  catch (x) { toast(x.error || 'Не получилось удалить'); }
+});
+
+/* рейтинг */
+$('#btnLeaders').addEventListener('click', async () => {
+  const ol = $('#leadList'); ol.innerHTML = '<li class="empty">Загрузка…</li>'; $('#dlgLeaders').showModal();
+  try {
+    const r = await Hub.api('leaders');
+    if (!r.top.length) { ol.innerHTML = '<li class="empty">Пока никто не набрал очков. Стань первым!</li>'; return; }
+    ol.innerHTML = r.top.map((u, i) => {
+      const s = u.stats || {}, bits = [];
+      if (s.stars) bits.push('★ ' + s.stars); if (s.levels) bits.push(s.levels + ' ур.'); if (s.crowns) bits.push(s.crowns + ' верш.'); if (s.iq) bits.push('IQ ' + s.iq);
+      return `<li class="${me && me.login === u.login ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(u.name)}<small>${esc(bits.join(' · '))}</small></span><span class="sc">${u.score}</span></li>`;
+    }).join('');
+  } catch (x) { ol.innerHTML = `<li class="empty">${x.offline ? 'Рейтинг работает, когда игротека запущена через server.py' : esc(x.error || 'Ошибка')}</li>`; }
+});
+
+window.addEventListener('pageshow', e => { if (e.persisted) { me = Hub.user(); paintAccount(); render(); } });
+boot();
+</script>
+</body>
+</html>

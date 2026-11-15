@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;padding:0}[hidden]{display:none!important}</style>
+<script src="../assets/hub.js" data-home></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Валики</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Валики: малярные валики по краям поля красят строки и столбцы глазурованной плитки. Тёплая мастерская: песочный фон, ореховый поднос, терракотовый акцент. */
+:root{
+  --bg:#f1ebe2; --panel:#fbf8f3; --line:#dcd2c3; --ink:#2a231c; --muted:#76695a;
+  --tray:#6f5643; --tray2:#5b4636; --grout:#4a392c; --band:#e6dccd;
+  --accent:#c8553d; --accent-ink:#fff; --star:#e3a21a; --star-off:#cfc4b4; --good:#3f8a4a; --bad:#b73a32;
+  --display:"Russo One","Arial Black",system-ui,sans-serif; --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1a1613; --panel:#25201b; --line:#3b332b; --ink:#f0e9df; --muted:#ab9f90;
+  --tray:#4a3a2e; --tray2:#3b2e24; --grout:#2a2019; --band:#2c2620;
+  --accent:#ec7a5f; --accent-ink:#2b0f08; --star:#f0b93a; --star-off:#4a4036; --good:#76c983; --bad:#ff7d72; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1a1613; --panel:#25201b; --line:#3b332b; --ink:#f0e9df; --muted:#ab9f90;
+  --tray:#4a3a2e; --tray2:#3b2e24; --grout:#2a2019; --band:#2c2620;
+  --accent:#ec7a5f; --accent-ink:#2b0f08; --star:#f0b93a; --star-off:#4a4036; --good:#76c983; --bad:#ff7d72; color-scheme:dark}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+.app{max-width:560px;margin:0 auto;padding-top:max(8px,env(safe-area-inset-top,0px));padding-bottom:max(8px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;height:100%;height:100dvh}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-weight:800;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;min-width:40px}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn svg{width:20px;height:20px;flex:none}
+.btn.glow{box-shadow:0 0 0 3px var(--accent)}
+.btn:focus-visible,.lv:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+/* меню */
+#menu{display:flex;flex-direction:column;gap:12px;overflow-y:auto;padding-bottom:16px;flex:1;min-height:0}
+.brand{display:flex;align-items:center;gap:12px;margin-top:6px}
+.brand h1{font-family:var(--display);font-weight:400;font-size:34px;letter-spacing:.03em;margin:0;line-height:1}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:13px;font-weight:700}
+.brand canvas{width:56px;height:56px;flex:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.set{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.set label{font-weight:800;font-size:13px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:6px 10px;font-weight:800;font-size:13px;min-height:36px}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.world h2{font-family:var(--display);font-weight:400;font-size:17px;margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.world h2 small{font-family:var(--body);font-weight:800;font-size:12px;color:var(--muted)}
+.world p{margin:2px 0 8px;color:var(--muted);font-size:12.5px;font-weight:600}
+.lvs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.lv{border:1px solid var(--line);background:var(--bg);border-radius:10px;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:15px;padding:2px}
+.lv .st{font-size:10px;letter-spacing:1px;color:var(--star-off);line-height:1}
+.lv .st b{color:var(--star);font-weight:400}
+.lv.done{border-color:var(--star)}
+.lv.lock{opacity:.4;pointer-events:none}
+.lv.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.lv.cur .st{color:rgba(255,255,255,.55)}
+/* игра */
+#game{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lvname{font-family:var(--display);font-size:17px;line-height:1.1;text-align:center;flex:1;min-width:0}
+.lvname small{display:block;font-family:var(--body);font-size:12px;color:var(--muted);font-weight:800;letter-spacing:.02em}
+.top2{display:flex;gap:10px;align-items:stretch}
+.target{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:3px;touch-action:none;cursor:pointer;flex:none}
+.target span{font-size:11px;font-weight:800;color:var(--muted);line-height:1}
+.target canvas{display:block}
+.side{flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:6px;min-width:0}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.stat b{font-family:var(--display);font-weight:400;font-size:22px;line-height:1}
+.stat span{font-size:12px;font-weight:800;color:var(--muted);line-height:1.2}
+.stat.warn b{color:var(--bad)}
+.tools{display:flex;gap:6px}
+.tools .btn{flex:1}
+#wrap{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#board{display:block;touch-action:none}
+.tip{font-size:12px;color:var(--muted);text-align:center;font-weight:700;min-height:17px}
+.toast{position:absolute;left:50%;top:8px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font-weight:800;font-size:13px;max-width:92%;text-align:center;pointer-events:none;opacity:0;transition:opacity .2s}
+.toast.show{opacity:.94}
+/* окна */
+.modal{position:fixed;inset:0;background:rgba(20,14,8,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;max-width:380px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.box h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 6px}
+.box p{margin:6px 0 12px;color:var(--muted);font-weight:600}
+.box .stars{font-size:40px;letter-spacing:6px;color:var(--star-off);line-height:1.1}
+.box .stars b{color:var(--star);font-weight:400}
+.box .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.box .acts .btn{min-width:96px}
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="menu">
+    <div class="brand"><canvas id="logo" width="112" height="112"></canvas><div><h1>Валики</h1><p>Красьте строки и столбцы в нужном порядке, чтобы собрать рисунок</p></div></div>
+    <button class="btn primary" id="cont" style="min-height:48px;font-size:16px">Играть</button>
+    <div class="card set">
+      <div><label>Скорость валика</label><br><div class="seg" id="spd"></div></div>
+      <div><label>Значки на плитке</label><br><div class="seg" id="sym"><button data-v="1">Вкл</button><button data-v="0">Выкл</button></div></div>
+      <div><label>Звук</label><br><div class="seg" id="snd"><button data-v="1">Вкл</button><button data-v="0">Выкл</button></div></div>
+    </div>
+    <div id="worlds" style="display:flex;flex-direction:column;gap:10px"></div>
+  </section>
+
+  <section id="game" hidden>
+    <div class="bar">
+      <button class="btn" id="back" aria-label="В меню"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="lvname" id="lvname"></div>
+      <button class="btn" id="next" aria-label="Следующий уровень"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <div class="top2">
+      <div class="target" id="tgt" title="Удерживайте, чтобы наложить образец на поле"><span>Образец</span><canvas id="thumb"></canvas><span>держите — сравнить</span></div>
+      <div class="side">
+        <div class="stat" id="stat"><span id="statL">Ходы</span><b id="moves">0</b><span id="statR" style="text-align:right"></span></div>
+        <div class="tools">
+          <button class="btn" id="undo" aria-label="Отменить ход"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+          <button class="btn" id="reset" aria-label="Заново"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9"/><path d="M3 4v5h5"/></svg></button>
+          <button class="btn" id="hint" aria-label="Подсказка"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <div id="wrap"><canvas id="board"></canvas><div class="toast" id="toast"></div></div>
+    <div class="tip" id="tip"></div>
+  </section>
+</div>
+
+<div class="modal" id="modal" hidden><div class="box" id="mbox"></div></div>
+<script>
+/* ===== ДВИЖОК: уровни, генератор, решатель ===== */
+const BLANK=0, INK=1; // цвета холста: 0 кремовый, 1 графит; 2..11 краски
+const PAINTS=[2,3,4,5,6,7,8,9,10,11];
+const WORLDS=[
+ {name:'Первые мазки', intro:'Нажимайте на валики по краям: валик прокатывается и красит всю строку или столбец. Последний мазок ложится поверх прежних. Соберите рисунок как на образце.',
+  sizes:[[3,3],[3,3],[3,4],[4,4],[4,4],[4,5],[5,5],[5,5],[5,5],[5,6]], cols:[2,2,3,3,3,3,3,4,4,4], rowSides:'R', colSides:'T', both:0, none:0, stones:[0,0], init:'blank', use:[.5,.8], inkPaint:0, limit:0, minPar:[2,8]},
+ {name:'Лишние валики', intro:'Теперь не все валики нужны. Неудачный мазок можно перекрыть другим или отменить.',
+  sizes:[[5,5],[5,5],[5,6],[5,6],[6,6],[6,6],[6,6],[6,7],[7,7],[7,7]], cols:[4,4,4,5,5,5,5,5,6,6], rowSides:'R', colSides:'T', both:0, none:.12, stones:[0,0], init:'blank', use:[.45,.7], inkPaint:0, limit:0, minPar:[5,9]},
+ {name:'Два конца', intro:'У некоторых строк и столбцов валики с обеих сторон, и краска у них разная. Без камней валик проходит всю линию до конца.',
+  sizes:[[5,5],[5,6],[6,6],[6,6],[6,6],[6,7],[7,7],[7,7],[7,7],[7,7]], cols:[4,4,5,5,5,5,6,6,6,6], rowSides:'LR', colSides:'TB', both:.45, none:.05, stones:[0,0], init:'blank', use:[.4,.6], inkPaint:0, limit:0, minPar:[5,12]},
+ {name:'Шахматка', intro:'Поле уже расчерчено в клетку. Часть клеток образца — это нетронутая шахматка, их красить нельзя. Белые и тёмные валики возвращают цвет холста.',
+  sizes:[[5,5],[5,6],[6,6],[6,6],[6,6],[6,7],[7,7],[7,7],[7,7],[7,8]], cols:[3,3,4,4,4,4,5,5,5,5], rowSides:'R', colSides:'T', both:.25, none:.05, stones:[0,0], init:'checker', use:[.35,.55], inkPaint:.25, limit:0, minPar:[5,8]},
+ {name:'Камни', intro:'Камни не красятся и останавливают валик. Валик с другой стороны строки красит свой отрезок до камня.',
+  sizes:[[5,5],[5,6],[6,6],[6,6],[6,6],[6,7],[7,7],[7,7],[7,7],[7,8]], cols:[4,4,4,5,5,5,5,6,6,6], rowSides:'LR', colSides:'TB', both:.6, none:0, stones:[2,6], init:'blank', use:[.4,.6], inkPaint:0, limit:0, minPar:[6,13]},
+ {name:'Счёт ходов', intro:'Здесь число ходов ограничено эталоном. Лишний мазок можно отменить, ход вернётся.',
+  sizes:[[5,5],[5,6],[6,6],[6,6],[6,6],[6,7],[7,7],[7,7],[7,7],[7,8]], cols:[4,4,5,5,5,5,5,6,6,6], rowSides:'LR', colSides:'TB', both:.4, none:.05, stones:[0,3], init:'mix', use:[.4,.6], inkPaint:.15, limit:1, minPar:[6,12]},
+ {name:'Мастерская', intro:'Всё вместе: два конца, камни, шахматка. Поле растёт.',
+  sizes:[[7,7],[7,7],[7,8],[7,8],[8,8],[8,8],[8,8],[8,8],[8,8],[8,8]], cols:[5,5,6,6,6,6,7,7,7,7], rowSides:'LR', colSides:'TB', both:.5, none:.05, stones:[0,6], init:'mix', use:[.4,.6], inkPaint:.15, limit:0, minPar:[9,14]},
+ {name:'Мозаика', intro:'Шахматка и камни вместе. Сначала ищите линии, которые лягут последними.',
+  sizes:[[7,7],[7,8],[8,8],[8,8],[8,8],[8,8],[8,9],[8,9],[9,9],[9,9]], cols:[5,5,6,6,6,6,7,7,7,7], rowSides:'LR', colSides:'TB', both:.5, none:.05, stones:[3,8], init:'checker', use:[.35,.5], inkPaint:.25, limit:0, minPar:[9,13]},
+ {name:'Большие полотна', intro:'Полотна до 9×9 и больше красок.',
+  sizes:[[8,8],[8,8],[8,9],[8,9],[9,9],[9,9],[9,9],[9,9],[9,9],[9,9]], cols:[6,6,7,7,7,8,8,8,8,8], rowSides:'LR', colSides:'TB', both:.5, none:.05, stones:[0,8], init:'mix', use:[.4,.55], inkPaint:.15, limit:0, minPar:[11,15]},
+ {name:'Мастер', intro:'Финальные полотна 10×10, и ходы снова считаются.',
+  sizes:[[9,9],[9,9],[9,10],[9,10],[10,10],[10,10],[10,10],[10,10],[10,10],[10,10]], cols:[7,7,8,8,8,9,9,9,10,10], rowSides:'LR', colSides:'TB', both:.5, none:.05, stones:[2,9], init:'mix', use:[.4,.55], inkPaint:.15, limit:1, minPar:[12,16]},
+];
+const LEVELS=WORLDS.length*10;
+
+function rng(seed){let s=seed>>>0;return function(){s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
+function ri(r,a,b){return a+Math.floor(r()*(b-a+1));}
+function shuffle(r,a){for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+/* Кнопка: {side:'L'|'R'|'T'|'B', line, color, cells:[индексы по ходу валика]} ; камень = -1 в сетке */
+function segCells(R,C,stone,side,line){
+  const out=[];
+  if(side==='L'){for(let c=0;c<C;c++){const i=line*C+c;if(stone[i])break;out.push(i);}}
+  else if(side==='R'){for(let c=C-1;c>=0;c--){const i=line*C+c;if(stone[i])break;out.push(i);}}
+  else if(side==='T'){for(let r=0;r<R;r++){const i=r*C+line;if(stone[i])break;out.push(i);}}
+  else {for(let r=R-1;r>=0;r--){const i=r*C+line;if(stone[i])break;out.push(i);}}
+  return out;
+}
+function applySeq(grid,btns,seq){const g=grid.slice();for(const b of seq){const B=btns[b];for(const i of B.cells)g[i]=B.color;}return g;}
+function eqGrid(a,b,stone){for(let i=0;i<a.length;i++){if(!stone[i]&&a[i]!==b[i])return false;}return true;}
+
+/* Решатель: обратное «снятие слоёв». Возвращает последовательность нажатий (вперёд) или null. */
+function peel(cur,target,stone,btns,r){
+  const n=cur.length,cov=new Uint8Array(n),used=new Uint8Array(btns.length),order=[];
+  const idx=btns.map((_,i)=>i);
+  let changed=true;
+  while(changed){
+    changed=false;
+    if(r)shuffle(r,idx);
+    for(const b of idx){
+      if(used[b])continue;const B=btns[b];let ok=true,fresh=false;
+      for(const i of B.cells){if(cov[i])continue;if(target[i]!==B.color){ok=false;break;}fresh=true;}
+      if(ok&&fresh){used[b]=1;order.push(b);for(const i of B.cells)cov[i]=1;changed=true;}
+    }
+  }
+  for(let i=0;i<n;i++){if(!stone[i]&&!cov[i]&&cur[i]!==target[i])return null;}
+  return order.reverse();
+}
+function prune(cur,target,stone,btns,seq,r){
+  seq=seq.slice();let again=true;
+  while(again){
+    again=false;const ord=seq.map((_,i)=>i);if(r)shuffle(r,ord);else ord.reverse();
+    for(const k of ord){
+      if(k>=seq.length)continue;
+      const t=seq.slice(0,k).concat(seq.slice(k+1));
+      if(eqGrid(applySeq(cur,btns,t),target,stone)){seq=t;again=true;break;}
+    }
+  }
+  return seq;
+}
+function solve(cur,target,stone,btns,tries,seed){
+  const base=peel(cur,target,stone,btns,null);if(!base)return null;
+  let best=prune(cur,target,stone,btns,base,null);
+  const r=rng(seed||12345);
+  for(let t=0;t<(tries||0);t++){
+    const s=peel(cur,target,stone,btns,r);const p=prune(cur,target,stone,btns,s,r);
+    if(p.length<best.length)best=p;
+  }
+  return best;
+}
+
+function lerp(a,b,t){return a+(b-a)*t;}
+function genLevel(n){
+  const w=Math.floor((n-1)/10),k=(n-1)%10,W=WORLDS[w];
+  const R=W.sizes[k][0],C=W.sizes[k][1],nc=W.cols[k];
+  const minPar=Math.round(lerp(W.minPar[0],W.minPar[1],k/9));
+  let best=null;
+  for(let att=0;att<400;att++){
+    const r=rng(n*7919+att*104729+17);
+    const pal=shuffle(r,PAINTS.slice()).slice(0,nc);
+    // начальный холст
+    let init=W.init; if(init==='mix')init=r()<.5?'blank':'checker';
+    const grid=new Array(R*C);
+    for(let y=0;y<R;y++)for(let x=0;x<C;x++)grid[y*C+x]=init==='checker'?((x+y)&1?INK:BLANK):BLANK;
+    const stone=new Uint8Array(R*C);
+    const ns=ri(r,W.stones[0],W.stones[1]);
+    for(let s=0,g=0;s<ns&&g<200;g++){const i=ri(r,0,R*C-1);if(stone[i])continue;
+      // не ставим камни вплотную друг к другу
+      const y=Math.floor(i/C),x=i%C;let bad=false;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const yy=y+dy,xx=x+dx;if(yy>=0&&yy<R&&xx>=0&&xx<C&&stone[yy*C+xx])bad=true;}
+      if(bad)continue;stone[i]=1;s++;}
+    const btns=[];
+    const colorFor=()=>{if(W.inkPaint&&r()<W.inkPaint)return init==='checker'?(r()<.5?BLANK:INK):BLANK;return pal[ri(r,0,nc-1)];};
+    const addLine=(sides,line,isRow)=>{
+      if(r()<W.none)return;
+      let ss;
+      if(sides.length===1)ss=[sides];
+      else if(r()<W.both)ss=[sides[0],sides[1]];
+      else ss=[r()<.5?sides[0]:sides[1]];
+      const cs=[];
+      for(const sd of ss){
+        const cells=segCells(R,C,stone,sd,line);
+        if(!cells.length)continue;
+        let col=colorFor();
+        if(cs.length&&!stone.some(v=>v)&&col===cs[0])col=pal[(pal.indexOf(col)+1)%nc]||pal[0];
+        cs.push(col);
+        btns.push({side:sd,line,color:col,cells});
+      }
+    };
+    for(let y=0;y<R;y++)addLine(W.rowSides,y,true);
+    for(let x=0;x<C;x++)addLine(W.colSides,x,false);
+    if(btns.length<3)continue;
+    // случайная последовательность (каждая кнопка не больше раза)
+    const useN=Math.max(2,Math.round(btns.length*lerp(W.use[0],W.use[1],r())));
+    const seq=shuffle(r,btns.map((_,i)=>i)).slice(0,useN);
+    const target=applySeq(grid,btns,seq);
+    // проверки
+    let diff=0,tot=0;const seen=new Set();
+    for(let i=0;i<R*C;i++){if(stone[i])continue;tot++;if(target[i]!==grid[i])diff++;seen.add(target[i]);}
+    if(diff<tot*.45)continue;
+    if(seen.size<Math.min(3,nc+ (init==='checker'?1:0)))continue;
+    const sol=solve(grid,target,stone,btns,6,n*31+att);
+    if(!sol)continue;
+    const par=sol.length;
+    // порядок важен: случайные перестановки решения обычно не подходят
+    let fails=0;for(let t=0;t<8;t++){const p=shuffle(r,sol.slice());if(!eqGrid(applySeq(grid,btns,p),target,stone))fails++;}
+    const maxPar=minPar+(w===0?1:4);
+    const score=(fails>=6?100:0)-Math.max(0,minPar-par)*2-Math.max(0,par-maxPar);
+    const cand={n,w,R,C,grid,stone,btns,target,par,sol,limit:W.limit?par:0,score,fails};
+    if(par>=minPar&&par<=maxPar&&fails>=6){best=cand;break;}
+    if(!best||score>best.score)best=cand;
+  }
+  return best;
+}
+/* ===== ИГРА ===== */
+const COLORS=['#efe6d4','#33323a','#e5484d','#f2782c','#f4c22e','#4fae4f','#15a493','#4aa9ee','#3c5ad6','#8c52c9','#e0559f','#9a6b4b'];
+const CNAMES=['белый','тёмный','красный','оранжевый','жёлтый','зелёный','бирюзовый','голубой','синий','фиолетовый','розовый','коричневый'];
+const SAVE='valiki-v1';
+let save={stars:{},best:{},unlocked:1,intro:{},set:{speed:1,sym:1,snd:1}};
+try{const s=JSON.parse(localStorage.getItem(SAVE)||'null');if(s)save=Object.assign(save,s,{set:Object.assign(save.set,s.set||{})});}catch(e){}
+function persist(){try{localStorage.setItem(SAVE,JSON.stringify(save));}catch(e){}}
+const $=id=>document.getElementById(id);
+const cache=new Map();
+function level(n){if(!cache.has(n))cache.set(n,genLevel(n));return cache.get(n);}
+
+/* ---- цвет ---- */
+function hex(c){const n=parseInt(c.slice(1),16);return[(n>>16)&255,(n>>8)&255,n&255];}
+function shade(c,f){const[r,g,b]=hex(c);const m=v=>Math.max(0,Math.min(255,Math.round(f<0?v*(1+f):v+(255-v)*f)));return`rgb(${m(r)},${m(g)},${m(b)})`;}
+function lum(c){const[r,g,b]=hex(c);return(.299*r+.587*g+.114*b)/255;}
+
+/* ---- значки ---- */
+function symbol(g,k,x,y,s){
+  g.beginPath();const h=s/2;
+  switch(k){
+    case 2:g.arc(x,y,h*.8,0,7);break;
+    case 3:g.moveTo(x,y-h*.9);g.lineTo(x+h*.9,y+h*.7);g.lineTo(x-h*.9,y+h*.7);g.closePath();break;
+    case 4:for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i&1?h*.42:h*.95;g.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);}g.closePath();break;
+    case 5:{const t=h*.32;g.rect(x-t,y-h*.85,2*t,h*1.7);g.rect(x-h*.85,y-t,h*1.7,2*t);break;}
+    case 6:g.moveTo(x,y-h*.95);g.lineTo(x+h*.75,y);g.lineTo(x,y+h*.95);g.lineTo(x-h*.75,y);g.closePath();break;
+    case 7:g.moveTo(x,y-h*.95);g.quadraticCurveTo(x+h*.85,y+h*.05,x+h*.6,y+h*.45);g.arc(x,y+h*.3,h*.62,.25,Math.PI-.25);g.quadraticCurveTo(x-h*.85,y+h*.05,x,y-h*.95);break;
+    case 8:g.rect(x-h*.72,y-h*.72,h*1.44,h*1.44);break;
+    case 9:for(let i=0;i<6;i++){const a=i*Math.PI/3;g.lineTo(x+Math.cos(a)*h*.88,y+Math.sin(a)*h*.88);}g.closePath();break;
+    case 10:g.moveTo(x,y+h*.85);g.bezierCurveTo(x-h*1.3,y-h*.1,x-h*.55,y-h*1.05,x,y-h*.35);g.bezierCurveTo(x+h*.55,y-h*1.05,x+h*1.3,y-h*.1,x,y+h*.85);break;
+    case 11:g.arc(x,y,h*.85,0,7);g.moveTo(x+h*.42,y);g.arc(x,y,h*.42,0,7,true);break;
+  }
+  g.fill('evenodd');
+}
+
+/* ---- плитка (предрисованная) ---- */
+let tiles={},tileS=0;
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+function makeTile(k,S){
+  const cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');
+  const p=Math.max(1,S*.045),w=S-2*p,r=S*.16;
+  if(k===-1){ // камень
+    rr(g,p,p,w,w,r*1.4);const gr=g.createLinearGradient(0,p,0,S-p);gr.addColorStop(0,'#9b958c');gr.addColorStop(1,'#5f5a53');g.fillStyle=gr;g.fill();
+    g.save();g.clip();g.fillStyle='rgba(0,0,0,.18)';
+    const rs=rng(7);for(let i=0;i<9;i++){g.beginPath();g.arc(p+rs()*w,p+rs()*w,S*(.03+rs()*.05),0,7);g.fill();}
+    g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=S*.03;g.beginPath();g.moveTo(S*.3,S*.18);g.lineTo(S*.45,S*.45);g.lineTo(S*.38,S*.62);g.moveTo(S*.45,S*.45);g.lineTo(S*.7,S*.55);g.stroke();
+    g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.ellipse(S*.36,S*.28,S*.22,S*.1,-.5,0,7);g.fill();g.restore();
+    return cv;
+  }
+  const c=COLORS[k];
+  rr(g,p,p,w,w,r);g.fillStyle=shade(c,-.28);g.fill();           // кромка
+  rr(g,p,p,w,w*.94,r);g.fillStyle=c;g.fill();                   // лицевая сторона
+  g.save();rr(g,p,p,w,w*.94,r);g.clip();
+  // фактура: у холста — льняная сетка, у красок — мягкая глазурь
+  if(k<=1){g.strokeStyle=k===0?'rgba(120,95,60,.13)':'rgba(255,255,255,.07)';g.lineWidth=Math.max(1,S*.012);
+    for(let i=1;i<7;i++){const t=p+w*i/7;g.beginPath();g.moveTo(t,p);g.lineTo(t,S);g.moveTo(p,t);g.lineTo(S,t);g.stroke();}}
+  const gl=g.createLinearGradient(p,p,S-p,S-p);gl.addColorStop(0,'rgba(255,255,255,.42)');gl.addColorStop(.45,'rgba(255,255,255,.06)');gl.addColorStop(1,'rgba(0,0,0,.10)');
+  g.fillStyle=gl;g.fillRect(0,0,S,S);
+  g.fillStyle='rgba(255,255,255,.55)';g.beginPath();g.ellipse(S*.3,S*.2,S*.17,S*.06,-.35,0,7);g.fill();
+  g.restore();
+  if(save.set.sym&&k>=2){g.fillStyle=lum(c)>.6?shade(c,-.42):shade(c,.38);symbol(g,k,S/2,S*.49,S*.36);}
+  return cv;
+}
+function buildTiles(S){tileS=S;tiles={};for(let k=-1;k<COLORS.length;k++)tiles[k]=makeTile(k,S);}
+
+/* ---- звук ---- */
+let ac=null;
+function audio(){if(!save.set.snd)return null;try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();}catch(e){ac=null;}return ac;}
+function sRoll(dur){const a=audio();if(!a)return;try{const n=Math.floor(a.sampleRate*dur),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(.6+.4*Math.sin(i/180));
+  const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=.8;const gn=a.createGain();const t=a.currentTime;
+  gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(.16,t+.03);gn.gain.setValueAtTime(.16,t+Math.max(.04,dur-.06));gn.gain.linearRampToValueAtTime(0,t+dur);
+  s.connect(f);f.connect(gn);gn.connect(a.destination);s.start(t);}catch(e){}}
+function sTone(fr,t0,d,v,type){const a=audio();if(!a)return;try{const o=a.createOscillator(),gn=a.createGain();o.type=type||'triangle';o.frequency.value=fr;const t=a.currentTime+t0;gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(v||.12,t+.015);gn.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(gn);gn.connect(a.destination);o.start(t);o.stop(t+d+.05);}catch(e){}}
+function sWin(){[523,659,784,1047].forEach((f,i)=>sTone(f,i*.09,.4,.12));}
+function sBad(){sTone(220,0,.25,.1,'square');}
+
+/* ---- состояние уровня ---- */
+let L=null,cur=[],hist=[],moves=0,hintUsed=false,hintBtn=-1,won=false,peek=false,pressId=0;
+let shown=[],shownId=[],popT=[],sweeps=[],pulse={};
+const board=$('board'),bg=board.getContext('2d');
+let lay=null,dpr=1;
+
+function startLevel(n){
+  L=level(n);cur=L.grid.slice();hist=[];moves=0;hintUsed=false;hintBtn=-1;won=false;peek=false;sweeps=[];pulse={};
+  shown=cur.slice();shownId=new Array(cur.length).fill(0);popT=new Array(cur.length).fill(-1e9);
+  $('menu').hidden=true;$('game').hidden=false;
+  const W=WORLDS[L.w];
+  $('lvname').innerHTML=`Уровень ${n}<small>${W.name} · ${L.R}×${L.C}</small>`;
+  $('next').disabled=n>=LEVELS||n>=save.unlocked;
+  $('tip').textContent=n===1?'Нажмите на валик у края поля':'';
+  layout();updStat();drawThumb();
+  if(!save.intro[L.w]&&(n-1)%10===0){save.intro[L.w]=1;persist();
+    showModal(`<h3>${W.name}</h3><p>${W.intro}</p><div class="acts"><button class="btn primary" data-a="close">Понятно</button></div>`);}
+}
+function updStat(){
+  const st=$('stat');
+  if(L.limit){$('statL').textContent='Осталось ходов';$('moves').textContent=L.limit-moves;$('statR').textContent=`из ${L.limit}`;st.classList.toggle('warn',!won&&L.limit-moves<=1);}
+  else{$('statL').textContent='Ходы';$('moves').textContent=moves;$('statR').innerHTML=`эталон<br>${L.par}`;st.classList.toggle('warn',moves>L.par);}
+  $('undo').disabled=!hist.length||won;$('reset').disabled=!hist.length||won;$('hint').disabled=won;
+}
+
+/* ---- раскладка ---- */
+function sides(){const s={L:0,R:0,T:0,B:0};for(const b of L.btns)s[b.side]=1;return s;}
+function layout(){
+  if(!L)return;
+  const wr=$('wrap').getBoundingClientRect();dpr=Math.min(3,window.devicePixelRatio||1);
+  const sd=sides(),bf=.95;
+  const nx=L.C+(sd.L+sd.R)*bf+.3,ny=L.R+(sd.T+sd.B)*bf+.3;
+  const s=Math.floor(Math.max(14,Math.min(70,wr.width/nx,wr.height/ny)));
+  const band=s*bf,pad=s*.15;
+  const W=Math.round(nx*s),H=Math.round(ny*s);
+  board.width=W*dpr;board.height=H*dpr;board.style.width=W+'px';board.style.height=H+'px';
+  const ox=pad+(sd.L?band:0),oy=pad+(sd.T?band:0);
+  lay={s,band,ox,oy,W,H,sd};
+  const S=Math.round(s*dpr);if(S!==tileS)buildTiles(S);
+}
+function cellXY(i){return[lay.ox+(i%L.C)*lay.s,lay.oy+Math.floor(i/L.C)*lay.s];}
+function btnRect(b){
+  const B=L.btns[b],{s,band,ox,oy}=lay;
+  if(B.side==='L')return[ox-band,oy+B.line*s,band,s];
+  if(B.side==='R')return[ox+L.C*s,oy+B.line*s,band,s];
+  if(B.side==='T')return[ox+B.line*s,oy-band,s,band];
+  return[ox+B.line*s,oy+L.R*s,s,band];
+}
+const DIR={L:[1,0],R:[-1,0],T:[0,1],B:[0,-1]};
+
+/* ---- ход ---- */
+function press(b){
+  if(won)return;
+  if(L.limit&&moves>=L.limit){toast('Ходы закончились: отмените ход или начните заново');sBad();glow('undo');return;}
+  const B=L.btns[b];
+  hist.push(cur.slice());moves++;
+  for(const i of B.cells)cur[i]=B.color;
+  pressId++;
+  const speed=12*save.set.speed,dur=B.cells.length/speed;
+  sweeps.push({b,t0:performance.now(),dur:dur*1000,id:pressId,done:0});
+  pulse[b]=performance.now();
+  sRoll(Math.min(1.2,dur+.05));
+  if(b===hintBtn)hintBtn=-1;
+  $('tip').textContent='';
+  updStat();
+  if(eqGrid(cur,L.target,L.stone)){won=true;updStat();setTimeout(winNow,dur*1000+450);}
+  else if(L.limit&&moves>=L.limit){setTimeout(()=>{if(!won&&moves>=L.limit)toast('Ходы закончились: отмените ход или начните заново');},dur*1000+200);}
+}
+function syncShown(){sweeps=[];shown=cur.slice();shownId.fill(pressId);}
+function undo(){if(!hist.length||won)return;cur=hist.pop();moves--;pressId++;syncShown();hintBtn=-1;updStat();}
+function reset(){if(won)return;if(!hist.length)return;cur=L.grid.slice();hist=[];moves=0;pressId++;syncShown();hintBtn=-1;updStat();}
+function hint(){
+  if(won)return;
+  const sol=solve(cur,L.target,L.stone,L.btns,3,moves*97+L.n);
+  if(!sol){toast('С этого места рисунок уже не собрать. Отмените ход.');glow('undo');return;}
+  if(L.limit&&moves+sol.length>L.limit){toast('Ходов не хватит. Отмените пару ходов.');glow('undo');return;}
+  hintUsed=true;hintBtn=sol[0];
+  const B=L.btns[hintBtn];
+  $('tip').textContent=`Подсказка: ${CNAMES[B.color]} валик, ${B.side==='L'||B.side==='R'?'строка '+(B.line+1):'столбец '+(B.line+1)}`;
+}
+function glow(id){const e=$(id);e.classList.add('glow');setTimeout(()=>e.classList.remove('glow'),1400);}
+let tt=0;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200);}
+
+function starsFor(){
+  if(L.limit)return hintUsed?2:3;
+  let s=moves<=L.par?3:moves<=L.par+2?2:1;if(hintUsed)s=Math.min(s,2);return s;
+}
+function winNow(){
+  const n=L.n,s=starsFor();
+  save.stars[n]=Math.max(save.stars[n]||0,s);
+  save.best[n]=Math.min(save.best[n]||999,moves);
+  if(n+1>save.unlocked)save.unlocked=Math.min(LEVELS,n+1);
+  persist();sWin();
+  const better=moves<L.par?`<p><b style="color:var(--good)">Короче эталона на ${L.par-moves}!</b></p>`:'';
+  const last=n>=LEVELS;
+  showModal(`<h3>${last?'Все полотна готовы!':'Готово!'}</h3><div class="stars">${'<b>★</b>'.repeat(s)}${'★'.repeat(3-s)}</div>
+   <p>Ходов: ${moves} · эталон: ${L.par}${hintUsed?' · с подсказкой':''}</p>${better}
+   <div class="acts"><button class="btn" data-a="menu">Меню</button><button class="btn" data-a="again">Ещё раз</button>${last?'':'<button class="btn primary" data-a="next">Дальше</button>'}</div>`);
+  $('next').disabled=n>=LEVELS;
+}
+
+/* ---- окна ---- */
+function showModal(html){$('mbox').innerHTML=html;$('modal').hidden=false;}
+$('modal').addEventListener('click',e=>{
+  const a=e.target.closest('[data-a]');if(!a)return;$('modal').hidden=true;
+  const v=a.dataset.a;
+  if(v==='menu')openMenu();else if(v==='again')startLevel(L.n);else if(v==='next')startLevel(L.n+1);
+});
+
+/* ---- отрисовка ---- */
+function frame(now){
+  requestAnimationFrame(frame);
+  if($('game').hidden||!lay)return;
+  const g=bg,{s,band,ox,oy,W,H}=lay;
+  g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
+  const css=getComputedStyle(document.documentElement);
+  // поднос
+  rr(g,ox-s*.12,oy-s*.12,L.C*s+s*.24,L.R*s+s*.24,s*.22);g.fillStyle=css.getPropertyValue('--tray');g.fill();
+  rr(g,ox-s*.04,oy-s*.04,L.C*s+s*.08,L.R*s+s*.08,s*.14);g.fillStyle=css.getPropertyValue('--grout');g.fill();
+  // продвижение валиков
+  for(const sw of sweeps){
+    const B=L.btns[sw.b],p=Math.min(B.cells.length,(now-sw.t0)/sw.dur*B.cells.length);
+    while(sw.done<B.cells.length&&sw.done+.5<=p){const i=B.cells[sw.done];if(sw.id>shownId[i]){shown[i]=B.color;shownId[i]=sw.id;popT[i]=now;}sw.done++;}
+  }
+  // плитки
+  const src=peek?L.target:shown;
+  for(let i=0;i<src.length;i++){
+    const[x,y]=cellXY(i);let k=L.stone[i]?-1:src[i];
+    let sc=1;const dt=now-popT[i];if(!peek&&dt<220){const t=dt/220;sc=.82+.18*(1-Math.pow(1-t,3))+Math.sin(t*Math.PI)*.06;}
+    const ss=s*sc;g.drawImage(tiles[k],x+(s-ss)/2,y+(s-ss)/2,ss,ss);
+  }
+  if(peek){g.fillStyle='rgba(0,0,0,.08)';g.fillRect(ox,oy,L.C*s,L.R*s);}
+  // кнопки-валики
+  for(let b=0;b<L.btns.length;b++)drawRoller(g,b,now);
+  // катящиеся валики
+  sweeps=sweeps.filter(sw=>now-sw.t0<sw.dur+180);
+  for(const sw of sweeps){
+    const B=L.btns[sw.b],[dx,dy]=DIR[B.side],n=B.cells.length;
+    const t=Math.min(1,(now-sw.t0)/sw.dur),fade=now-sw.t0>sw.dur?1-(now-sw.t0-sw.dur)/180:1;
+    const[cx0,cy0]=cellXY(B.cells[0]);const sx=cx0+s/2-dx*s*.5,sy=cy0+s/2-dy*s*.5;
+    const px=sx+dx*s*n*t,py=sy+dy*s*n*t;
+    g.globalAlpha=Math.max(0,fade);drawCyl(g,px,py,!!dx,s,COLORS[B.color]);g.globalAlpha=1;
+  }
+}
+function drawCyl(g,x,y,vertical,s,c){
+  const lw=s*.34,lh=s*.98;const w=vertical?lw:lh,h=vertical?lh:lw;
+  g.save();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=s*.15;g.shadowOffsetY=s*.05;
+  rr(g,x-w/2,y-h/2,w,h,Math.min(w,h)*.45);
+  const gr=vertical?g.createLinearGradient(x-w/2,0,x+w/2,0):g.createLinearGradient(0,y-h/2,0,y+h/2);
+  gr.addColorStop(0,shade(c,-.35));gr.addColorStop(.35,shade(c,.25));gr.addColorStop(.6,c);gr.addColorStop(1,shade(c,-.4));
+  g.fillStyle=gr;g.fill();g.restore();
+  // ворс
+  g.strokeStyle='rgba(0,0,0,.13)';g.lineWidth=Math.max(1,s*.02);g.beginPath();
+  for(let i=1;i<5;i++){if(vertical){const yy=y-h/2+h*i/5;g.moveTo(x-w*.3,yy);g.lineTo(x+w*.3,yy+s*.03);}else{const xx=x-w/2+w*i/5;g.moveTo(xx,y-h*.3);g.lineTo(xx+s*.03,y+h*.3);}}
+  g.stroke();
+}
+function drawRoller(g,b,now){
+  const B=L.btns[b],[x,y,w,h]=btnRect(b),s=lay.s,c=COLORS[B.color];
+  const vertical=B.side==='L'||B.side==='R';
+  let k=1;const pt=pulse[b];if(pt&&now-pt<200)k=1-.12*Math.sin((now-pt)/200*Math.PI);
+  const hint=b===hintBtn;
+  const cx=x+w/2,cy=y+h/2;
+  // ручка
+  const[dx,dy]=DIR[B.side];
+  g.strokeStyle='#8a8278';g.lineWidth=Math.max(1.5,s*.06);g.lineCap='round';
+  g.beginPath();g.moveTo(cx-dx*w*.08,cy-dy*h*.08);g.lineTo(cx-dx*w*.42,cy-dy*h*.42);g.stroke();
+  if(hint){const a=.45+.35*Math.sin(now/180);g.save();g.globalAlpha=a;rr(g,x+2,y+2,w-4,h-4,s*.2);g.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent');g.fill();g.restore();}
+  g.save();g.translate(cx+dx*w*.1,cy+dy*h*.1);g.scale(k,k);
+  drawCyl(g,0,0,vertical,s*.86,c);
+  // стрелка внутрь поля
+  const a=s*.13;g.fillStyle=lum(c)>.6?'rgba(0,0,0,.45)':'rgba(255,255,255,.85)';g.beginPath();
+  if(vertical){g.moveTo(dx*a,0);g.lineTo(-dx*a*.6,-a);g.lineTo(-dx*a*.6,a);}else{g.moveTo(0,dy*a);g.lineTo(-a,-dy*a*.6);g.lineTo(a,-dy*a*.6);}
+  g.closePath();g.fill();
+  g.restore();
+}
+function drawThumb(){
+  const cv=$('thumb'),m=Math.max(L.R,L.C),cs=Math.max(7,Math.floor(Math.min(108,innerWidth*.3)/m));
+  const W=L.C*cs+4,H=L.R*cs+4,d=Math.min(3,devicePixelRatio||1);
+  cv.width=W*d;cv.height=H*d;cv.style.width=W+'px';cv.style.height=H+'px';
+  const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);
+  g.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--grout');rr(g,0,0,W,H,4);g.fill();
+  for(let i=0;i<L.target.length;i++){
+    const x=2+(i%L.C)*cs,y=2+Math.floor(i/L.C)*cs;
+    if(L.stone[i]){g.fillStyle='#7a746c';rr(g,x+1,y+1,cs-2,cs-2,cs*.3);g.fill();continue;}
+    g.fillStyle=COLORS[L.target[i]];rr(g,x+.5,y+.5,cs-1,cs-1,cs*.18);g.fill();
+    if(save.set.sym&&L.target[i]>=2&&cs>=12){g.fillStyle=lum(COLORS[L.target[i]])>.6?shade(COLORS[L.target[i]],-.42):shade(COLORS[L.target[i]],.38);symbol(g,L.target[i],x+cs/2,y+cs/2,cs*.42);}
+  }
+}
+
+/* ---- ввод ---- */
+board.addEventListener('pointerdown',e=>{
+  if(!L||!lay)return;e.preventDefault();
+  const r=board.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  let best=-1,bd=1e9;
+  for(let b=0;b<L.btns.length;b++){const[bx,by,bw,bh]=btnRect(b);
+    if(x>=bx-2&&x<=bx+bw+2&&y>=by-2&&y<=by+bh+2){const d=Math.hypot(x-bx-bw/2,y-by-bh/2);if(d<bd){bd=d;best=b;}}}
+  if(best>=0)press(best);
+});
+const tg=$('tgt');
+tg.addEventListener('pointerdown',e=>{e.preventDefault();peek=true;try{tg.setPointerCapture(e.pointerId);}catch(_){}});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>tg.addEventListener(ev,()=>{peek=false;}));
+tg.addEventListener('contextmenu',e=>e.preventDefault());
+$('undo').onclick=undo;$('reset').onclick=reset;$('hint').onclick=hint;
+$('back').onclick=openMenu;
+$('next').onclick=()=>{if(L.n<LEVELS&&L.n<save.unlocked)startLevel(L.n+1);};
+addEventListener('resize',()=>{if(!$('game').hidden){layout();drawThumb();}});
+addEventListener('keydown',e=>{if($('game').hidden)return;if(e.key==='z'||e.key==='Backspace')undo();if(e.key==='r')reset();if(e.key==='h')hint();});
+
+/* ---- меню ---- */
+function openMenu(){$('game').hidden=true;$('menu').hidden=false;renderMenu();}
+function renderMenu(){
+  const sp=[.5,1,2,3];$('spd').innerHTML=sp.map(v=>`<button data-v="${v}" class="${save.set.speed==v?'on':''}">×${String(v).replace('.',',')}</button>`).join('');
+  for(const id of['sym','snd'])[...$(id).children].forEach(b=>b.classList.toggle('on',+b.dataset.v===save.set[id]));
+  const nextN=Math.min(save.unlocked,LEVELS);
+  $('cont').textContent=save.unlocked>1?`Продолжить · уровень ${nextN}`:'Играть';
+  let h='';
+  WORLDS.forEach((W,w)=>{
+    let tot=0;for(let i=1;i<=10;i++)tot+=save.stars[w*10+i]||0;
+    h+=`<div class="card world"><h2>${w+1}. ${W.name}<small>★ ${tot}/30</small></h2><p>${W.intro}</p><div class="lvs">`;
+    for(let i=1;i<=10;i++){const n=w*10+i,st=save.stars[n]||0,lock=n>save.unlocked;
+      h+=`<button class="lv${st?' done':''}${lock?' lock':''}${n===nextN&&!st?' cur':''}" data-n="${n}">${n}<span class="st">${'<b>★</b>'.repeat(st)}${'★'.repeat(3-st)}</span></button>`;}
+    h+='</div></div>';
+  });
+  $('worlds').innerHTML=h;
+}
+$('worlds').addEventListener('click',e=>{const b=e.target.closest('.lv');if(b)startLevel(+b.dataset.n);});
+$('cont').onclick=()=>startLevel(Math.min(save.unlocked,LEVELS));
+$('spd').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;save.set.speed=+b.dataset.v;persist();renderMenu();});
+['sym','snd'].forEach(id=>$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;save.set[id]=+b.dataset.v;persist();tileS=0;renderMenu();}));
+
+/* логотип */
+(function(){const g=$('logo').getContext('2d');const cs=[2,4,8,5];
+  for(let y=0;y<4;y++)for(let x=0;x<4;x++){const k=x===2?cs[2]:y===1?cs[0]:y===3?cs[3]:((x+y)&1?1:0);g.fillStyle=COLORS[k];rr(g,4+x*26,4+y*26,24,24,6);g.fill();
+    g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.ellipse(4+x*26+8,4+y*26+6,5,2,-.35,0,7);g.fill();}})();
+
+renderMenu();requestAnimationFrame(frame);
+</script>
+</body></html>

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<style>html,body{margin:0;padding:0}[hidden]{display:none!important}</style>
+<script src="../assets/hub.js" data-home></script>
+<title>Восемь залов</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Макет: экзаменационный бланк в клетку. Одна колонка: табло зала сверху, задание по центру, ответы плиткой снизу. */
+:root{
+  --paper:#eef1f6; --card:#ffffff; --ink:#1a2140; --muted:#5b6382; --line:#d5dae6; --grid:rgba(47,71,214,.075);
+  --accent:#2f47d6; --accent-ink:#ffffff; --mark:#ffd84d; --mark-ink:#1a2140; --good:#178a55; --bad:#cf3b3b;
+  --good-bg:rgba(23,138,85,.12); --bad-bg:rgba(207,59,59,.12);
+  --f-display:"Russo One","Arial Black",system-ui,sans-serif;
+  --f-body:"Golos Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0f1220; --card:#181c2e; --ink:#e7eaf6; --muted:#9aa2c2; --line:#2b3150; --grid:rgba(127,141,255,.07);
+  --accent:#7f8dff; --accent-ink:#0f1220; --mark:#e9bd2c; --mark-ink:#151204; --good:#43c487; --bad:#ff6b6b;
+  --good-bg:rgba(67,196,135,.14); --bad-bg:rgba(255,107,107,.14); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1220; --card:#181c2e; --ink:#e7eaf6; --muted:#9aa2c2; --line:#2b3150; --grid:rgba(127,141,255,.07);
+  --accent:#7f8dff; --accent-ink:#0f1220; --mark:#e9bd2c; --mark-ink:#151204; --good:#43c487; --bad:#ff6b6b;
+  --good-bg:rgba(67,196,135,.14); --bad-bg:rgba(255,107,107,.14); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px;min-height:100%}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;text-wrap:balance;margin:0;line-height:1.15}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.btn{border:0;border-radius:10px;padding:12px 18px;font-weight:600;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:hover{filter:brightness(1.07)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* шапка */
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:18px}
+.logo svg{width:30px;height:30px}
+
+/* главная */
+.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:24px;align-items:center}
+.hero h1{font-size:clamp(34px,7vw,56px);letter-spacing:.01em}
+.hero h1 span{background:linear-gradient(transparent 58%,var(--mark) 58%,var(--mark) 92%,transparent 92%)}
+.hero p{margin:12px 0 0;color:var(--muted);max-width:44ch}
+.demo{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px}
+.demo svg{display:block;width:100%;height:auto}
+.demo small{display:block;color:var(--muted);font-size:12px;margin-top:6px;text-align:center}
+@media (max-width:620px){.hero{grid-template-columns:1fr}.demo{max-width:300px}}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:620px){.modes{grid-template-columns:1fr}}
+.mode{text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mode:hover{border-color:var(--accent)}
+.mode.main{border-color:var(--accent);box-shadow:4px 4px 0 var(--accent)}
+.mode h3{font-size:19px}
+.mode .meta{font-size:13px;color:var(--muted)}
+.mode p{margin:0;font-size:14px}
+.panel{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:8px 12px;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.setrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.setrow > span{font-weight:600;font-size:15px}
+.halls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;counter-reset:h}
+@media (max-width:620px){.halls{grid-template-columns:repeat(2,1fr)}}
+.halls div{border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px;font-size:13px;min-width:0}
+.halls b{display:block;font-family:var(--f-display);font-weight:400;font-size:14px}
+.hist{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.hist div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.note{font-size:13px;color:var(--muted);margin:0}
+
+/* табло игры */
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);padding-block:8px;display:flex;flex-direction:column;gap:8px;border-bottom:1.5px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.hudrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.dots{display:flex;gap:4px}
+.dots i{width:22px;height:8px;border-radius:4px;background:var(--line)}
+.dots i.done{background:var(--ink)}
+.dots i.cur{background:var(--accent)}
+.stats{display:flex;gap:14px;font-size:14px;align-items:center}
+.stats b{font-family:var(--f-mono);font-size:16px}
+.streak{background:var(--mark);color:var(--mark-ink);border-radius:6px;padding:0 6px;font-weight:700;font-family:var(--f-mono)}
+.timer{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.timer i{display:block;height:100%;background:var(--accent);width:100%;transform-origin:left}
+.timer.low i{background:var(--bad)}
+.qbox{display:flex;flex-direction:column;gap:16px}
+.qmeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted)}
+.lvl{display:inline-flex;gap:2px}
+.lvl i{width:6px;height:12px;border-radius:2px;background:var(--line)}
+.lvl i.on{background:var(--ink)}
+.prompt{font-size:clamp(18px,3.4vw,22px);font-family:var(--f-body);font-weight:600;line-height:1.35}
+.visual{display:flex;justify-content:center}
+.visual .mx{width:min(100%,330px);background:var(--card);border-radius:12px;border:1.5px solid var(--line)}
+.visual svg{display:block}
+.opts{display:grid;gap:10px}
+.opts.fig6{grid-template-columns:repeat(3,1fr)}
+@media (min-width:640px){.opts.fig6{grid-template-columns:repeat(6,1fr)}}
+.opts.fig{grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}
+.opts.txt{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.opts.num{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+.opts.wide{grid-template-columns:1fr}
+.opt{position:relative;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px;min-height:56px;display:flex;align-items:center;justify-content:center;text-align:center;min-width:0;transition:transform .08s,border-color .15s}
+.opt:hover{border-color:var(--accent)}
+.opt:active{transform:scale(.97)}
+.opt .k{position:absolute;top:4px;left:7px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.opt svg{width:100%;max-width:96px;height:auto;display:block}
+.opt .w{font-weight:600;font-size:17px;overflow-wrap:anywhere}
+.opt .n{font-family:var(--f-mono);font-size:22px;font-weight:700}
+.opt .l{font-family:var(--f-mono);font-size:26px;font-weight:700}
+.opt.right{border-color:var(--good);background:var(--good-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.opts.locked .opt{pointer-events:none}
+.seq{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.seq span{font-family:var(--f-mono);font-weight:700;font-size:clamp(20px,4.5vw,28px);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:6px 12px;min-width:48px;text-align:center}
+.seq span.q,.q{background:var(--mark);color:var(--mark-ink);border-color:var(--mark)}
+.abc{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 0;justify-content:center;max-width:560px;margin:0 auto}
+.abc span{width:30px;text-align:center;line-height:1.2}
+.abc span b{display:block;color:var(--ink);font-size:14px}
+.ana{font-size:clamp(20px,4.6vw,28px);font-weight:600;text-align:center;line-height:1.6}
+.ana .q{border-radius:6px;padding:0 10px}
+.ana em{font-style:normal;color:var(--muted);padding:0 6px}
+.facts{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;margin:0;display:flex;flex-direction:column;gap:6px;font-size:17px;list-style:none}
+.facts li{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.facts li::before{content:"—";color:var(--muted)}
+.eq{display:flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:22px;font-weight:700;flex-wrap:wrap}
+.ic{width:28px;height:28px;display:inline-block;vertical-align:middle}
+.figs{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
+.figs .box{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:8px}
+.figs .box svg{width:150px;height:150px}
+.fb{border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.fb.good{background:var(--good-bg)} .fb.bad{background:var(--bad-bg)}
+.fb b{font-family:var(--f-display);font-weight:400}
+.pop{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font-family:var(--f-display);font-size:34px;pointer-events:none;z-index:20;animation:pop .9s ease-out forwards;text-shadow:0 2px 0 var(--paper)}
+.pop.g{color:var(--good)} .pop.b{color:var(--bad)}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,-30%) scale(.8)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
+@media (prefers-reduced-motion:reduce){.pop{animation:none;opacity:0}.opt{transition:none}}
+
+/* вступление зала */
+.intro{display:flex;flex-direction:column;gap:16px;align-items:flex-start;padding-block:24px}
+.intro .num{font-family:var(--f-display);font-size:clamp(70px,18vw,130px);line-height:.9;color:var(--accent)}
+.intro h2{font-size:clamp(28px,6vw,42px)}
+.intro p{margin:0;color:var(--muted);max-width:52ch}
+
+/* итог */
+.res{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+@media (max-width:560px){.res{grid-template-columns:1fr}}
+.iq{font-family:var(--f-display);font-size:clamp(84px,22vw,140px);line-height:.9}
+.iq small{display:block;font-family:var(--f-body);font-size:14px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.band{display:inline-block;background:var(--mark);color:var(--mark-ink);padding:2px 10px;border-radius:6px;font-weight:700}
+.bell svg{width:100%;height:auto;display:block}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:560px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}
+.tile span{font-size:12px;color:var(--muted)}
+.tile b{display:block;font-family:var(--f-mono);font-size:22px}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:110px 1fr 52px;gap:10px;align-items:center;font-size:14px}
+.bar .t{height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--accent)}
+.bar .v{font-family:var(--f-mono);text-align:right}
+.review{display:flex;flex-direction:column;gap:6px}
+.review details{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:8px 12px}
+.review summary{cursor:pointer;display:flex;gap:10px;align-items:center;font-size:14px;list-style:none}
+.review summary::-webkit-details-marker{display:none}
+.review .mk{font-family:var(--f-mono);font-weight:700;width:22px;text-align:center}
+.review .mk.g{color:var(--good)} .review .mk.b{color:var(--bad)}
+.review .body{display:flex;flex-direction:column;gap:10px;padding-top:10px}
+.review .ans{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}
+.review .ans .opt{min-height:40px;padding:6px 10px;pointer-events:none}
+.review .ans .opt svg{max-width:64px}
+.review .body .visual .mx{width:min(100%,240px)}
+.review .body .figs .box svg{width:110px;height:110px}
+.disc{border-left:4px solid var(--mark);padding:4px 0 4px 12px;font-size:14px;color:var(--muted);margin:0}
+.picker{display:flex;flex-wrap:wrap;gap:8px}
+.picker button{border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font-size:14px}
+.picker button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+
+/* svg-фигуры */
+.sf *{stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round}
+.f0 *{fill:var(--card)} .f1 *{fill:var(--ink)} .f2 *{fill:url(#hatch)}
+.hb{fill:var(--card)} .hl{stroke:var(--ink);stroke-width:2.2}
+.gl{stroke:var(--line);stroke-width:1.5;fill:none}
+.qcell{fill:var(--mark)} .qtxt{fill:var(--mark-ink);font-family:var(--f-display);font-size:40px}
+.seg-l{stroke:var(--ink);stroke-width:4;stroke-linecap:round}
+.dot{fill:var(--muted);opacity:.5}
+.pc{fill:var(--accent);stroke:var(--card);stroke-width:1.5}
+.pc2{fill:var(--card);stroke:var(--ink);stroke-width:1.5}
+.bellfill{fill:var(--accent);opacity:.22} .bellline{fill:none;stroke:var(--ink);stroke-width:2}
+.bellaxis{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.bellmark{stroke:var(--accent);stroke-width:3}
+.belltxt{fill:var(--ink);font-family:var(--f-mono);font-size:12px;font-weight:700}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" class="hb"/><line x1="0" y1="0" x2="0" y2="6" class="hl"/></pattern>
+</defs></svg>
+
+<div class="wrap" id="app">
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 30 30" aria-hidden="true"><g class="gl"><rect x="1" y="1" width="28" height="28" rx="4"/></g><g class="sf f1"><rect x="5" y="5" width="8" height="8"/><circle cx="21" cy="9" r="4"/><polygon points="9,17 13,25 5,25"/></g><rect x="17" y="17" width="8" height="8" class="qcell"/></svg>Восемь залов</div>
+    <button class="btn ghost" id="homeBtn" hidden>Прервать</button>
+  </div>
+
+  <section id="home"></section>
+  <section id="train" hidden></section>
+  <section id="intro" hidden></section>
+  <section id="play" hidden></section>
+  <section id="result" hidden></section>
+</div>
+
+<script id="gen">
+// ================= генераторы заданий =================
+const R=Math.random;
+const ri=(a,b)=>a+Math.floor(R()*(b-a+1));
+const pick=a=>a[Math.floor(R()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const A=(n,f)=>Array.from({length:n},(_,i)=>f(i));
+const pc=m=>{let c=0;while(m){c+=m&1;m>>=1}return c};
+function plural(n,a,b,c){n=Math.abs(n)%100;const d=n%10;if(n>10&&n<20)return c;if(d>1&&d<5)return b;if(d===1)return a;return c}
+const ALPH='АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+
+const TIMEBASE={matrix:[40,10],numbers:[30,8],letters:[30,8],spatial:[30,8],net:[45,10],verbal:[25,4],order:[40,8],syl:[35,5],sym:[45,8],word:[45,10]};
+function qtime(key,L){const t=TIMEBASE[key]||[40,8];return t[0]+t[1]*L}
+
+function mkQ(o){
+  const all=[{h:o.correct,ok:1},...o.wrongs.map(h=>({h,ok:0}))];
+  const sh=o.keep?all.slice().sort((a,b)=>o.keep.indexOf(a.h)-o.keep.indexOf(b.h)):shuffle(all);
+  return {...o,opts:sh.map(x=>x.h),ans:sh.findIndex(x=>x.ok)};
+}
+
+// ---------- фигуры ----------
+function poly(p){return `<polygon points="${p.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ')}"/>`}
+const SHAPES={
+  circle:r=>`<circle r="${r}"/>`,
+  square:r=>{const s=r*.82;return `<rect x="${-s}" y="${-s}" width="${2*s}" height="${2*s}"/>`},
+  triangle:r=>poly([[0,-r],[r*.92,r*.62],[-r*.92,r*.62]]),
+  diamond:r=>poly([[0,-r],[r*.78,0],[0,r],[-r*.78,0]]),
+  hexagon:r=>poly(A(6,i=>[r*Math.cos(i*Math.PI/3),r*Math.sin(i*Math.PI/3)])),
+  star:r=>poly(A(10,i=>{const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*.45:r;return[q*Math.cos(a),q*Math.sin(a)]})),
+  arrow:r=>poly([[0,-r],[r*.78,-r*.05],[r*.3,-r*.05],[r*.3,r],[-r*.3,r],[-r*.3,-r*.05],[-r*.78,-r*.05]]),
+  half:r=>`<path d="M${-r} ${r*.35} A${r} ${r} 0 0 1 ${r} ${r*.35} Z"/>`,
+  cross:r=>{const a=r*.34;return poly([[-a,-r],[a,-r],[a,-a],[r,-a],[r,a],[a,a],[a,r],[-a,r],[-a,a],[-r,a],[-r,-a],[-a,-a]])}
+};
+const SHN={circle:'круг',square:'квадрат',triangle:'треугольник',diamond:'ромб',hexagon:'шестиугольник',star:'звезда',arrow:'стрелка',half:'полукруг',cross:'крест'};
+const SYMM={circle:1,square:90,triangle:120,diamond:180,hexagon:60,star:72,arrow:360,half:360,cross:90};
+const ASYM=['arrow','half','triangle'];
+const SYMS=['circle','square','triangle','diamond','hexagon','star'];
+const POS={1:[[50,50]],2:[[30,50],[70,50]],3:[[50,29],[29,70],[71,70]],4:[[30,30],[70,30],[30,70],[70,70]],5:[[27,27],[73,27],[50,50],[27,73],[73,73]]};
+const ckey=c=>`${c.shape}|${c.count}|${c.fill}|${c.size}|${SYMM[c.shape]===1?0:((c.rot%SYMM[c.shape])+SYMM[c.shape])%SYMM[c.shape]}`;
+function cellG(c){
+  const r=c.count===1?[17,24,31][c.size]:[8,11.5,14.5][c.size];
+  return POS[c.count].map(([x,y])=>`<g transform="translate(${x} ${y}) rotate(${c.rot})" class="sf f${c.fill}">${SHAPES[c.shape](r)}</g>`).join('');
+}
+const cellSVG=c=>`<svg viewBox="0 0 100 100" aria-hidden="true">${cellG(c)}</svg>`;
+function icon(shape,cls='f1'){return `<svg class="ic" viewBox="-13 -13 26 26" aria-hidden="true"><g class="sf ${cls}">${SHAPES[shape](11)}</g></svg>`}
+
+function matrixSVG(cellFn){
+  let s=`<svg class="mx" viewBox="0 0 300 300" role="img" aria-label="Матрица 3 на 3, правая нижняя клетка пустая">`;
+  s+=`<rect x="200" y="200" width="100" height="100" class="qcell"/><text x="250" y="264" text-anchor="middle" class="qtxt">?</text>`;
+  s+=`<g class="gl"><line x1="100" y1="0" x2="100" y2="300"/><line x1="200" y1="0" x2="200" y2="300"/><line x1="0" y1="100" x2="300" y2="100"/><line x1="0" y1="200" x2="300" y2="200"/></g>`;
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++){if(r===2&&c===2)continue;s+=`<g transform="translate(${c*100} ${r*100})">${cellFn(r,c)}</g>`}
+  return s+'</svg>';
+}
+
+// ---------- матрицы: свойства ----------
+function genMatrix(L){
+  if(L>=4&&R()<.5)return genOverlay(L);
+  const n=L<=1?1:L===2?2:L<=4?3:4;
+  const attrs=['shape','count','fill','size'];if(L>=3)attrs.push('rot');
+  let vary=shuffle(attrs).slice(0,n);
+  if(L>=4&&!vary.includes('rot')&&R()<.5)vary[0]='rot';
+  vary=[...new Set(vary)];
+  const rotOn=vary.includes('rot');
+  const rule={};
+  for(const a of vary){
+    let kinds=L===1?['latin','row','col']:['latin','latin','latin','row','col'];
+    if(a==='count')kinds=kinds.concat(['sum','sum']);
+    if(a==='rot')kinds=['prog','prog','latin'];
+    rule[a]=pick(kinds);
+  }
+  const step=pick([45,90]);
+  const vs={shape:rotOn?shuffle(ASYM):shuffle(SYMS).slice(0,3),count:shuffle([1,2,3,4]).slice(0,3),fill:shuffle([0,1,2]),size:shuffle([0,1,2]),rot:[0,step,2*step]};
+  const cons={shape:rotOn?pick(ASYM):pick(SYMS.concat(['arrow','half'])),count:pick([1,1,2,3]),fill:pick([0,1,1,2]),size:2,rot:0};
+  if(vary.includes('size')&&!vary.includes('count'))cons.count=pick([1,1,2]);
+  if(vary.includes('fill')&&cons.fill===undefined)cons.fill=0;
+  if(!vary.includes('fill')&&cons.fill===2&&(vary.includes('count')||cons.count>1))cons.fill=pick([0,1]);
+  const k=pick([1,2]);
+  const val=(a,r,c)=>{
+    if(!vary.includes(a))return cons[a];
+    const ru=rule[a];
+    if(ru==='latin')return vs[a][(c+k*r)%3];
+    if(ru==='row')return vs[a][r];
+    if(ru==='col')return vs[a][c];
+    if(ru==='sum')return r+c+1;
+    if(ru==='prog')return ((r+c)*step)%360;
+  };
+  const cell=(r,c)=>({shape:val('shape',r,c),count:val('count',r,c),fill:val('fill',r,c),size:val('size',r,c),rot:val('rot',r,c)});
+  const ans=cell(2,2);
+  const pools={shape:Object.keys(SHAPES).filter(s=>s!=='cross'),count:[1,2,3,4,5],fill:[0,1,2],size:[0,1,2],rot:[0,45,90,135,180,225,270,315]};
+  const seen=new Set([ckey(ans)]),wr=[];
+  for(const cand of [cell(2,1),cell(1,2)]){const kk=ckey(cand);if(!seen.has(kk)){seen.add(kk);wr.push(cand)}}
+  let g=0;
+  while(wr.length<5&&g++<800){
+    const d={...ans};const m=R()<.3?2:1;
+    for(let i=0;i<m;i++){
+      const a=R()<.75?pick(vary):pick(['shape','count','fill','size','rot']);
+      if(a==='rot'&&!ASYM.includes(d.shape))continue;
+      d[a]=pick(pools[a].filter(x=>x!==d[a]));
+    }
+    const kk=ckey(d);if(!seen.has(kk)){seen.add(kk);wr.push(d)}
+  }
+  const VN={shape:v=>SHN[v],count:v=>String(v),fill:v=>['пустая','сплошная','штриховка'][v],size:v=>['маленький','средний','большой'][v],rot:v=>v+'°'};
+  const AN={shape:'Форма',count:'Количество фигур',fill:'Заливка',size:'Размер',rot:'Поворот'};
+  const ex=vary.map(a=>{
+    const ru=rule[a];
+    if(a==='rot'&&ru==='prog')return `Поворот: каждая следующая клетка (вправо или вниз) повёрнута ещё на ${step}° по часовой стрелке.`;
+    if(ru==='sum')return `Количество фигур = номер строки + номер столбца − 1, поэтому в последней клетке их 5.`;
+    if(ru==='latin')return `${AN[a]}: в каждой строке и каждом столбце по одному разу встречается ${vs[a].map(VN[a]).join(', ')}.`;
+    const ADJ={shape:'одинаковая',count:'одинаковое',fill:'одинаковая',size:'одинаковый',rot:'одинаковый'}[a];
+    if(ru==='row')return `${AN[a]}: ${ADJ} внутри строки и меняется от строки к строке.`;
+    return `${AN[a]}: ${ADJ} в каждом столбце.`;
+  });
+  if(vary.length<4)ex.push('Остальные свойства фигур не меняются.');
+  return mkQ({cat:'matrix',sub:'attr',L,prompt:'Какая фигура должна стоять вместо знака вопроса?',
+    visual:`<div class="visual">${matrixSVG((r,c)=>cellG(cell(r,c)))}</div>`,
+    correct:cellSVG(ans),wrongs:wr.slice(0,5).map(cellSVG),cls:'fig6',ex:ex.join(' '),time:qtime('matrix',L)});
+}
+
+// ---------- матрицы: наложение линий ----------
+const SEG=[[0,0,2,0],[0,2,2,2],[0,0,0,2],[2,0,2,2],[0,0,2,2],[2,0,0,2],[0,1,2,1],[1,0,1,2],[1,0,2,1],[2,1,1,2],[1,2,0,1],[0,1,1,0]];
+const OPS={union:(a,b)=>a|b,xor:(a,b)=>a^b,inter:(a,b)=>a&b,diff:(a,b)=>a&~b};
+const OPEX={union:'Третья фигура в строке — наложение первых двух: все линии обеих фигур переносятся.',xor:'Линии первых двух фигур накладываются, но совпадающие линии исчезают.',inter:'В третьей фигуре остаются только линии, которые есть и в первой, и во второй.',diff:'Из первой фигуры убираются все линии, которые есть во второй.'};
+function linesG(m){
+  const P=i=>15+35*i;let s='';
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++)s+=`<circle cx="${P(i)}" cy="${P(j)}" r="2.2" class="dot"/>`;
+  SEG.forEach((g,i)=>{if(m>>i&1)s+=`<line x1="${P(g[0])}" y1="${P(g[1])}" x2="${P(g[2])}" y2="${P(g[3])}" class="seg-l"/>`});
+  return s;
+}
+const linesSVG=m=>`<svg viewBox="0 0 100 100" aria-hidden="true">${linesG(m)}</svg>`;
+function rmask(){let m=0;const k=ri(3,6);while(pc(m)<k)m|=1<<ri(0,11);return m}
+function genOverlay(L){
+  const op=L<=4?pick(['union','inter','xor']):pick(['xor','diff','xor','inter']);
+  let rows,tries=0;
+  for(;;){
+    rows=A(3,()=>{let a,b,c,t=0;do{a=rmask();b=rmask();c=OPS[op](a,b);t++}while((pc(c)<2||c===a||c===b||a===b)&&t<200);return[a,b,c]});
+    const cons=Object.keys(OPS).filter(o=>rows.slice(0,2).every(([a,b,c])=>OPS[o](a,b)===c));
+    if(cons.length===1&&cons[0]===op)break;
+    if(++tries>300)break;
+  }
+  const [a,b,ans]=rows[2];
+  const seen=new Set([ans]),wr=[];
+  for(const o of Object.keys(OPS)){const v=OPS[o](a,b);if(v&&!seen.has(v)){seen.add(v);wr.push(v)}}
+  let g=0;while(wr.length<5&&g++<300){let v=ans^(1<<ri(0,11));if(R()<.4)v^=1<<ri(0,11);if(v&&!seen.has(v)){seen.add(v);wr.push(v)}}
+  return mkQ({cat:'matrix',sub:'lines',L,prompt:'Какая фигура должна стоять вместо знака вопроса? Смотрите, как третья клетка строки получается из первых двух.',
+    visual:`<div class="visual">${matrixSVG((r,c)=>linesG(rows[r][c]))}</div>`,correct:linesSVG(ans),wrongs:shuffle(wr).slice(0,5).map(linesSVG),cls:'fig6',ex:OPEX[op],time:qtime('matrix',L)});
+}
+
+// ---------- числовые ряды ----------
+const PR=[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71];
+const NUMG=[
+  [1,2,()=>{const a=ri(1,25),d=ri(2,9);return{s:A(6,i=>a+d*i),ex:`Каждое следующее число на ${d} больше предыдущего.`}}],
+  [1,2,()=>{const d=ri(3,9),a=ri(6*d,99);return{s:A(6,i=>a-d*i),ex:`Каждое следующее число на ${d} меньше предыдущего.`}}],
+  [2,3,()=>{const a=ri(1,5),q=ri(2,3);return{s:A(6,i=>a*q**i),ex:`Каждое число в ${q} раза больше предыдущего.`}}],
+  [2,3,()=>{const x=ri(10,30),a=ri(4,9),b=ri(1,a-1);const s=[x];for(let i=1;i<7;i++)s.push(s[i-1]+(i%2?a:-b));return{s,ex:`Чередуются шаги +${a} и −${b}.`}}],
+  [2,3,()=>{const x=ri(1,20),d=ri(1,4);const s=[x];for(let i=1;i<7;i++)s.push(s[i-1]+d+i-1);return{s,ex:`Разность растёт на 1: +${d}, +${d+1}, +${d+2} и так далее.`}}],
+  [3,4,()=>{const k=ri(1,6),c=pick([0,0,1,-1,2,3]);return{s:A(6,i=>(k+i)**2+c),ex:`Это квадраты чисел ${k}, ${k+1}, ${k+2}…${c?` ${c>0?'плюс':'минус'} ${Math.abs(c)}`:''}.`}}],
+  [3,4,()=>{const a=ri(1,9),d1=ri(2,5),b=ri(25,45),d2=ri(1,4);return{s:A(8,i=>i%2?b-d2*((i-1)/2):a+d1*(i/2)),ex:`Два ряда вперемешку: на нечётных местах числа растут на ${d1}, на чётных — убывают на ${d2}.`}}],
+  [3,4,()=>{const x=ri(1,15),d=ri(1,3);const s=[x];for(let i=1;i<6;i++)s.push(s[i-1]+d*2**(i-1));return{s,ex:`Разности удваиваются: +${d}, +${2*d}, +${4*d}…`}}],
+  [4,5,()=>{const k=ri(2,3),c=pick([-1,1,2,3,-2]),x=ri(c<0?2:1,5);const s=[x];for(let i=1;i<6;i++)s.push(s[i-1]*k+c);return{s,ex:`Каждое число = предыдущее × ${k} ${c>0?'+':'−'} ${Math.abs(c)}.`}}],
+  [4,5,()=>{const a=ri(1,5),b=ri(a,8);const s=[a,b];for(let i=2;i<7;i++)s.push(s[i-1]+s[i-2]);return{s,ex:'Каждое число — сумма двух предыдущих.'}}],
+  [4,5,()=>{const k=ri(1,3);return{s:A(5,i=>(k+i)**3),ex:`Это кубы чисел ${k}, ${k+1}, ${k+2}…`}}],
+  [4,5,()=>{const x=ri(1,6),k=ri(1,6);const s=[x];for(let i=1;i<7;i++)s.push(i%2?s[i-1]*2:s[i-1]+k);return{s,ex:`Чередуются действия ×2 и +${k}.`}}],
+  [4,4,()=>{const k=ri(1,4);return{s:A(6,i=>(k+i)*(k+i+1)),ex:`Произведения соседних чисел: ${k}·${k+1}, ${k+1}·${k+2}…`}}],
+  [5,5,()=>{const a=ri(2,3),b=ri(-3,3),c=ri(-2,9);return{s:A(6,i=>a*(i+1)**2+b*(i+1)+c),ex:`Разности растут на ${2*a}: вторые разности постоянны.`}}],
+  [5,5,()=>{const st=ri(1,8);return{s:PR.slice(st,st+6),ex:'Подряд идущие простые числа (делятся только на 1 и на себя).'}}],
+  [5,5,()=>{const a=ri(1,2),b=ri(1,3),c=ri(2,4);const s=[a,b,c];for(let i=3;i<7;i++)s.push(s[i-1]+s[i-2]+s[i-3]);return{s,ex:'Каждое число — сумма трёх предыдущих.'}}],
+  [5,5,()=>{const x=ri(1,10);const s=[x];for(let i=1;i<6;i++)s.push(s[i-1]+i*i);return{s,ex:'Разности — квадраты: +1, +4, +9, +16…'}}],
+  [5,5,()=>{const x=ri(2,5),k=ri(2,6);const s=[x];for(let i=1;i<7;i++)s.push(i%2?s[i-1]*3:s[i-1]-k);return{s,ex:`Чередуются действия ×3 и −${k}.`}}],
+];
+function numDistract(ans,s,hide,neg){
+  const c=[];const n=s.length;
+  if(hide===n-1){c.push(2*s[n-2]-s[n-3]);const d=s[n-2]-s[n-3];c.push(ans+d,ans-d);if(s[n-3]&&s[n-2]%s[n-3]===0)c.push(s[n-2]*s[n-2]/s[n-3])}
+  else c.push((s[hide-1]+s[hide+1])/2,s[hide-1]+(s[hide+1]-s[hide+2]>0?1:0));
+  c.push(ans+1,ans-1,ans+2,ans-2,ans+10,ans-10,ans+3);
+  const out=[],seen=new Set([ans]);
+  for(const x of c)if(Number.isInteger(x)&&!seen.has(x)&&out.length<5&&(x>=0||neg)){seen.add(x);out.push(x)}
+  let g=0;while(out.length<5&&g++<200){const x=ans+ri(-15,15);if(!seen.has(x)&&(x>=0||neg)){seen.add(x);out.push(x)}}
+  return out;
+}
+function genNum(L){
+  const pool=NUMG.filter(g=>L>=g[0]&&L<=g[1]);
+  const {s,ex}=pick(pool)[2]();
+  const hide=L>=4&&R()<.35?ri(2,s.length-3):s.length-1;
+  const shown=hide===s.length-1?s.slice(0,-1):s;
+  const ans=s[hide];const neg=s.some(x=>x<0);
+  const h=v=>`<span class="n">${v}</span>`;
+  return mkQ({cat:'numbers',L,prompt:hide===s.length-1?'Какое число продолжит ряд?':'Какое число пропущено?',
+    visual:`<div class="seq">${shown.map((v,i)=>i===hide?'<span class="q">?</span>':`<span>${v}</span>`).join('')}</div>`,
+    correct:h(ans),wrongs:numDistract(ans,s,hide,neg).map(h),cls:'num',ex:`${ex} Полный ряд: ${s.join(', ')}.`,time:qtime('numbers',L)});
+}
+
+// ---------- буквенные ряды ----------
+const LETG=[
+  [1,2,()=>{const k=ri(1,3);return{d:A(5,()=>k),ex:`Каждый раз шаг вперёд на ${k}.`}}],
+  [2,3,()=>{const k=ri(2,4);return{d:A(5,()=>-k),ex:`Каждый раз шаг назад на ${k}.`}}],
+  [2,3,()=>{const k=ri(4,6);return{d:A(5,()=>k),ex:`Каждый раз шаг вперёд на ${k}.`}}],
+  [3,4,()=>{const a=ri(1,4);let b;do b=ri(1,4);while(b===a);return{d:A(6,i=>i%2?b:a),ex:`Шаги чередуются: +${a}, +${b}.`}}],
+  [3,4,()=>{const a=ri(1,2);return{d:A(5,i=>a+i),ex:`Шаг растёт на 1: +${a}, +${a+1}, +${a+2}…`}}],
+  [4,5,()=>{const a=ri(1,3),b=ri(1,3);return{inter:[a,-b],ex:`Два ряда вперемешку: один идёт вперёд на ${a}, другой — назад на ${b}.`}}],
+  [5,5,()=>({d:[1,2,4,8],ex:'Шаг удваивается: +1, +2, +4, +8.'})],
+  [5,5,()=>{const a=ri(3,5),b=ri(1,a-1);return{d:A(6,i=>i%2?-b:a),ex:`Шаги чередуются: +${a}, −${b}.`}}],
+  [4,5,()=>{const a=ri(3,4);return{d:A(5,i=>a-i),ex:`Шаг уменьшается на 1: +${a}, +${a-1}, +${a-2}…`}}],
+];
+function genLetters(L){
+  const pool=LETG.filter(g=>L>=g[0]&&L<=g[1]);
+  for(let t=0;t<300;t++){
+    const g=pick(pool)[2]();let idx;
+    if(g.inter){const n=7,x=ri(0,31),y=ri(0,31);idx=A(n,i=>i%2?y+g.inter[1]*((i-1)/2):x+g.inter[0]*(i/2))}
+    else{idx=[ri(0,31)];for(const d of g.d)idx.push(idx[idx.length-1]+d)}
+    if(idx.some(i=>i<0||i>31))continue;
+    if(new Set(idx).size<idx.length-1&&!g.inter)continue;
+    const ans=idx[idx.length-1],shown=idx.slice(0,-1);
+    const c=[ans+1,ans-1,ans+2,ans-2,2*shown[shown.length-1]-shown[shown.length-2],ans+3,ans-3];
+    const seen=new Set([ans]),w=[];for(const x of c)if(x>=0&&x<32&&!seen.has(x)&&w.length<5){seen.add(x);w.push(x)}
+    if(w.length<4)continue;
+    const h=i=>`<span class="l">${ALPH[i]}</span>`;
+    return mkQ({cat:'letters',L,prompt:'Какая буква продолжит ряд?',
+      visual:`<div class="seq">${shown.map(i=>`<span>${ALPH[i]}</span>`).join('')}<span class="q">?</span></div><div class="abc" aria-label="Алфавит с номерами">${[...ALPH].map((ch,i)=>`<span><b>${ch}</b>${i+1}</span>`).join('')}</div>`,
+      correct:h(ans),wrongs:w.map(h),cls:'num',ex:`${g.ex} ${idx.map(i=>ALPH[i]+'('+(i+1)+')').join(' → ')}. Алфавит без Ё.`,time:qtime('letters',L)});
+  }
+}
+
+// ---------- пространство: полимино ----------
+function norm(c){const mx=Math.min(...c.map(p=>p[0])),my=Math.min(...c.map(p=>p[1]));return c.map(([x,y])=>[x-mx,y-my]).sort((a,b)=>a[0]-b[0]||a[1]-b[1])}
+const PK=c=>norm(c).map(p=>p.join(',')).join(';');
+const rot90=c=>c.map(([x,y])=>[-y,x]);
+const mir=c=>c.map(([x,y])=>[-x,y]);
+function rots(c){const o=[];let t=c;for(let i=0;i<4;i++){o.push(norm(t));t=rot90(t)}return o}
+const bbox=c=>[Math.max(...c.map(p=>p[0]))+1,Math.max(...c.map(p=>p[1]))+1];
+function grow(n){const c=[[0,0]];const has=(x,y)=>c.some(p=>p[0]===x&&p[1]===y);while(c.length<n){const[x,y]=pick(c);const[dx,dy]=pick([[1,0],[-1,0],[0,1],[0,-1]]);if(!has(x+dx,y+dy))c.push([x+dx,y+dy])}return norm(c)}
+function chiral(c){const rk=new Set(rots(c).map(PK));return !rots(mir(c)).some(m=>rk.has(PK(m)))}
+function connected(c){const s=new Set(c.map(p=>p.join(',')));const st=[c[0]],seen=new Set([c[0].join(',')]);while(st.length){const[x,y]=st.pop();for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const k=(x+dx)+','+(y+dy);if(s.has(k)&&!seen.has(k)){seen.add(k);st.push([x+dx,y+dy])}}}return seen.size===c.length}
+const anyKey=c=>[...rots(c),...rots(mir(c))].map(PK).sort()[0];
+function polySVG(c,size){
+  const[w,h]=bbox(c);const S=Math.max(w,h,size||0)+1;const ox=(S-w)/2*10,oy=(S-h)/2*10;
+  return `<svg viewBox="0 0 ${S*10} ${S*10}" aria-hidden="true">${c.map(([x,y])=>`<rect x="${ox+x*10}" y="${oy+y*10}" width="10" height="10" class="pc"/>`).join('')}</svg>`;
+}
+function polyPiece(L){const n=[0,5,5,6,7,8][L];const lim=n<=6?4:5;for(;;){const c=grow(n);const[w,h]=bbox(c);if(w<=lim&&h<=lim&&w>1&&h>1&&chiral(c))return c}}
+function alter(c){
+  for(let t=0;t<200;t++){
+    const i=ri(0,c.length-1);const rest=c.filter((_,j)=>j!==i);if(!connected(rest))continue;
+    const[x,y]=pick(rest);const[dx,dy]=pick([[1,0],[-1,0],[0,1],[0,-1]]);
+    if(rest.some(p=>p[0]===x+dx&&p[1]===y+dy)||(x+dx===c[i][0]&&y+dy===c[i][1]))continue;
+    const nc=norm([...rest,[x+dx,y+dy]]);if(anyKey(nc)===anyKey(c))continue;
+    const[w,h]=bbox(nc);if(w>5||h>5)continue;return nc;
+  }
+}
+function genRotate(L){
+  const c=polyPiece(L);const r=rots(c);const k=ri(1,3);const correct=r[k];
+  const mk=shuffle(rots(mir(c)));const seen=new Set([PK(correct)]);const wr=[];
+  for(const m of mk){if(!seen.has(PK(m))&&wr.length<(L>=4?2:3)){seen.add(PK(m));wr.push(m)}}
+  if(L>=4){let g=0;while(wr.length<4&&g++<50){const a=alter(c);if(a){const ar=pick(rots(a));if(!seen.has(PK(ar))){seen.add(PK(ar));wr.push(ar)}}}}
+  const S=Math.max(...bbox(c));
+  return mkQ({cat:'spatial',sub:'rotate',L,prompt:'Какая фигура — это та же деталь, только повёрнутая? Переворачивать деталь нельзя.',
+    visual:`<div class="figs"><div class="box">${polySVG(c,S)}</div></div>`,
+    correct:polySVG(correct,S),wrongs:wr.map(w=>polySVG(w,S)),cls:'fig',
+    ex:`Правильная деталь повёрнута на ${k*90}° по часовой стрелке. Остальные — зеркальные отражения${L>=4?' или детали с переставленной клеткой':''}: поворотом их не получить.`,time:qtime('spatial',L)});
+}
+function genOddFig(L){
+  const c=polyPiece(L);const r=shuffle(rots(c));const odd=pick(rots(mir(c)));const S=Math.max(...bbox(c));
+  return mkQ({cat:'spatial',sub:'odd',L,prompt:'Четыре детали — одна и та же фигура в разных поворотах. Какая деталь лишняя?',visual:'',
+    correct:polySVG(odd,S),wrongs:r.map(x=>polySVG(x,S)),cls:'fig',ex:'Лишняя деталь — зеркальное отражение. Никаким поворотом в плоскости её не совместить с остальными.',time:qtime('spatial',L)});
+}
+
+// ---------- развёртки куба ----------
+const rollE=o=>({b:o.e,e:o.t,t:o.w,w:o.b,n:o.n,s:o.s});
+const rollW=o=>({b:o.w,w:o.t,t:o.e,e:o.b,n:o.n,s:o.s});
+const rollN=o=>({b:o.n,n:o.t,t:o.s,s:o.b,e:o.e,w:o.w});
+const rollS=o=>({b:o.s,s:o.t,t:o.n,n:o.b,e:o.e,w:o.w});
+function fold(cells){
+  const idx=new Map(cells.map((c,i)=>[c.join(','),i]));const bottom=Array(cells.length).fill(-1);bottom[0]=0;
+  const st=[[0,{b:0,t:1,n:2,s:3,e:4,w:5}]];const seen=new Set([0]);
+  while(st.length){const[i,o]=st.pop();const[x,y]=cells[i];
+    for(const[dx,dy,f]of[[1,0,rollE],[-1,0,rollW],[0,-1,rollN],[0,1,rollS]]){const j=idx.get((x+dx)+','+(y+dy));if(j===undefined||seen.has(j))continue;seen.add(j);const no=f(o);bottom[j]=no.b;st.push([j,no])}}
+  return{ok:new Set(bottom).size===6,bottom};
+}
+function hexo(want){for(let t=0;t<5000;t++){const c=grow(6);const[w,h]=bbox(c);if(!((w<=4&&h<=3)||(w<=3&&h<=4)||(w<=5&&h<=2)||(w<=2&&h<=5)))continue;if(w===1||h===1)continue;if(fold(c).ok===want)return c}}
+function netSVG(c,syms){
+  const[w,h]=bbox(c);const S=Math.max(w,h)+0.6;const ox=(S-w)/2*10,oy=(S-h)/2*10;
+  return `<svg viewBox="0 0 ${S*10} ${S*10}" aria-hidden="true">${c.map(([x,y],i)=>`<rect x="${ox+x*10}" y="${oy+y*10}" width="10" height="10" class="${syms?'pc2':'pc'}"/>${syms?`<g transform="translate(${ox+x*10+5} ${oy+y*10+5})" class="sf f1" style="stroke-width:.6">${SHAPES[syms[i]](3.2)}</g>`:''}`).join('')}</svg>`;
+}
+function genNet(L){
+  if(L>=4&&R()<.55||L===5&&R()<.7){
+    const c=hexo(true);const{bottom}=fold(c);const syms=shuffle(['star','circle','triangle','square','diamond','cross']);
+    const q=ri(0,5);const oppIdx=bottom.indexOf(bottom[q]^1);const ans=syms[oppIdx];
+    const others=syms.filter((s,i)=>i!==q&&i!==oppIdx);
+    return mkQ({cat:'spatial',sub:'net',L,prompt:`Из развёртки сложили куб. Какой знак окажется на грани напротив знака «${SHN[syms[q]]}» ${icon(syms[q])}?`,
+      visual:`<div class="figs"><div class="box">${netSVG(c,syms)}</div></div>`,correct:`<span class="w">${icon(ans)} ${SHN[ans]}</span>`,wrongs:others.map(s=>`<span class="w">${icon(s)} ${SHN[s]}</span>`),cls:'txt',
+      ex:`Противоположные грани на развёртке никогда не соприкасаются. Если мысленно сложить куб, напротив знака «${SHN[syms[q]]}» окажется «${SHN[ans]}».`,time:qtime('net',L)});
+  }
+  const inv=L>=4;const seen=new Set();const take=want=>{for(;;){const c=hexo(want);const k=anyKey(c);if(!seen.has(k)){seen.add(k);return c}}};
+  const correct=take(!inv);const wr=[take(inv),take(inv),take(inv)];
+  return mkQ({cat:'spatial',sub:'net',L,prompt:inv?'Три развёртки складываются в куб. Какая — нет?':'Какая из развёрток складывается в куб?',visual:'',
+    correct:netSVG(correct),wrongs:wr.map(x=>netSVG(x)),cls:'fig',
+    ex:inv?'У лишней развёртки при сгибании две грани ложатся друг на друга, и одна сторона куба остаётся открытой.':'Только у этой развёртки все шесть квадратов при сгибании попадают на разные грани куба. У остальных какие-то грани накладываются.',time:qtime('net',L)});
+}
+
+// ---------- слова ----------
+const ANA=`Птица|гнездо|пчела|улей|мёд,цветок,рой,нора|1
+Врач|больница|учитель|школа|урок,ученик,доска,книга|1
+Холодный|горячий|тёмный|светлый|чёрный,ночной,тусклый,мрачный|1
+Перчатка|рука|сапог|нога|кожа,шнурок,пятка,обувь|1
+Писатель|книга|композитор|симфония|оркестр,скрипка,дирижёр,концерт|2
+Год|месяц|неделя|день|час,календарь,выходные,утро|2
+Глаз|видеть|ухо|слышать|звук,шуметь,говорить,музыка|1
+Вода|жажда|еда|голод|вкус,обед,сытость,кухня|2
+Карандаш|грифель|ручка|стержень|бумага,колпачок,почерк,тетрадь|2
+Волк|стая|корова|стадо|ферма,телёнок,молоко,луг|1
+Старт|финиш|начало|конец|бег,середина,первый,отсчёт|1
+Мороз|шуба|дождь|зонт|лужа,туча,гроза,капля|1
+Капитан|корабль|пилот|самолёт|аэропорт,небо,штурвал,полёт|2
+Сыр|молоко|хлеб|мука|пекарь,печь,батон,масло|2
+Мало|много|редко|часто|иногда,медленно,поздно,однажды|2
+Рыба|жабры|человек|лёгкие|кожа,сердце,нос,кровь|2
+Художник|кисть|скульптор|резец|глина,мрамор,статуя,мастерская|3
+Секунда|минута|минута|час|день,время,циферблат,полдень|1
+Круг|шар|квадрат|куб|треугольник,прямоугольник,пирамида,ромб|2
+Гусеница|бабочка|головастик|лягушка|рыба,пруд,комар,ящерица|2
+Солдат|армия|игрок|команда|мяч,тренер,стадион,матч|2
+Язык|вкус|нос|запах|дыхание,лицо,чихание,воздух|1
+Зима|лето|север|юг|запад,мороз,полюс,компас|2
+Буква|слово|слово|предложение|словарь,буква,алфавит,звук|2
+Гвоздь|молоток|винт|отвёртка|гайка,доска,клей,пила|2
+Тренер|спортсмен|учитель|ученик|школа,урок,директор,оценка|2
+Шахматы|доска|футбол|поле|мяч,ворота,судья,команда|2
+Чашка|чай|тарелка|суп|ложка,вилка,кухня,блюдце|1
+Весна|цветение|осень|листопад|жара,снег,капель,ледоход|2
+Быстрый|медленный|громкий|тихий|звонкий,шумный,яркий,высокий|1
+Слон|хобот|птица|клюв|перо,крыло,гнездо,полёт|1
+Ночь|луна|день|солнце|облако,утро,тень,рассвет|1
+Компас|направление|термометр|температура|ртуть,погода,болезнь,шкала|3
+Глагол|действие|существительное|предмет|признак,слово,падеж,число|3
+Масса|килограмм|длина|метр|линейка,ширина,расстояние,литр|3
+Кит|млекопитающее|акула|рыба|океан,плавник,кит,дельфин|3
+Ручей|река|холм|гора|склон,равнина,долина,вершина|3
+Пианист|рояль|скрипач|скрипка|ноты,оркестр,концерт,сцена|1
+Семя|дерево|яйцо|птица|гнездо,скорлупа,желток,перо|2
+Причина|следствие|дождь|лужа|туча,зонт,небо,гром|3
+Окно|стекло|книга|бумага|обложка,буква,полка,чтение|3
+Целое|часть|лес|дерево|поляна,тропинка,лесник,грибы|3`.split('\n').map(l=>{const[a,b,c,d,w,lv]=l.split('|');return{a,b,c,d,w:w.split(','),lv:+lv}});
+const ODD=`яблоко,груша,слива,морковь,абрикос|3|Морковь — овощ, остальное — фрукты.|1
+стол,стул,шкаф,диван,ковёр|4|Ковёр — не мебель.|1
+берёза,дуб,клён,ель,липа|3|Ель — хвойное дерево, остальные лиственные.|1
+красный,синий,зелёный,жёлтый,круглый|4|«Круглый» — форма, остальное — цвета.|1
+бежать,прыгать,красивый,плыть,лететь|2|«Красивый» — прилагательное, остальные слова — глаголы.|1
+скрипка,гитара,арфа,барабан,балалайка|3|Барабан — ударный инструмент, остальные — струнные.|2
+Меркурий,Венера,Марс,Луна,Юпитер|3|Луна — спутник Земли, остальные — планеты.|2
+километр,метр,сантиметр,литр,миллиметр|3|Литр — мера объёма, остальное — длина.|1
+треугольник,квадрат,круг,ромб,трапеция|2|У круга нет углов.|2
+дельфин,кит,акула,тюлень,морж|2|Акула — рыба, остальные — млекопитающие.|2
+январь,март,май,июнь,июль|3|В июне 30 дней, в остальных месяцах — 31.|3
+пингвин,страус,курица,ласточка,киви|3|Ласточка летает, остальные птицы — нет.|2
+ромашка,роза,тюльпан,мак,папоротник|4|Папоротник не цветёт.|2
+железо,медь,золото,стекло,алюминий|3|Стекло — не металл.|1
+паук,муха,пчела,комар,бабочка|0|Паук — не насекомое: у него восемь ног.|2
+сосна,кедр,лиственница,пихта,ель|2|Лиственница сбрасывает хвою на зиму, остальные — вечнозелёные.|3
+ухо,нос,рот,глаз,плечо|4|Плечо — не часть лица.|1
+два,три,пять,девять,одиннадцать|3|Девять — не простое число (делится на 3).|3
+футбол,хоккей,баскетбол,шахматы,волейбол|3|Шахматы — настольная игра, остальное — подвижные командные игры.|1
+Москва,Париж,Берлин,Рим,Нью-Йорк|4|Нью-Йорк — не столица.|2
+молоко,кефир,сметана,творог,сок|4|Сок — не молочный продукт.|1
+понедельник,вторник,среда,суббота,четверг|3|Суббота — выходной, остальные — будни.|2
+север,юг,восток,запад,вверх|4|«Вверх» — не сторона света.|1
+квадрат,куб,шар,пирамида,цилиндр|0|Квадрат — плоская фигура, остальные — объёмные.|2
+лев,тигр,рысь,волк,гепард|3|Волк — из семейства псовых, остальные — кошачьи.|2
+река,озеро,море,пруд,остров|4|Остров — суша, остальное — водоёмы.|1
+Пушкин,Толстой,Чехов,Гоголь,Чайковский|4|Чайковский — композитор, остальные — писатели.|2
+шестнадцать,двадцать пять,тридцать шесть,сорок восемь,шестьдесят четыре|3|48 — не квадрат целого числа.|3
+час,минута,секунда,неделя,метр|4|Метр — мера длины, остальное — время.|1
+кислый,сладкий,солёный,горький,холодный|4|«Холодный» — не вкус.|1
+ведро,кастрюля,чашка,кувшин,сито|4|Сито не удерживает воду.|2
+три,шесть,двенадцать,восемнадцать,двадцать пять|4|25 не делится на 3.|3
+говорить,шептать,кричать,петь,смотреть|4|«Смотреть» не связано с голосом.|1
+тигр,зебра,жираф,кенгуру,лев|3|Кенгуру живёт в Австралии, остальные — в Африке.|3
+сантиметр,грамм,литр,метр,секунда|4|Почти всё — меры… но лишнее здесь «секунда»: это время, а не размер или количество вещества.|3
+дождь,снег,град,туман,ветер|4|Ветер — движение воздуха, остальное — вода в разных видах.|3
+вилка,ложка,нож,тарелка,половник|3|Тарелка — посуда, остальное — столовые приборы.|2
+круг,овал,квадрат,кольцо,эллипс|2|У квадрата есть углы, остальные фигуры — без углов.|3`.split('\n').map(l=>{const[w,i,e,lv]=l.split('|');return{w:w.split(','),i:+i,e,lv:+lv}});
+const usedV=new Set();
+function pickItem(arr,L,tag){
+  let p=arr.filter((x,i)=>!usedV.has(tag+i)&&x.lv===Math.min(3,L));
+  if(!p.length)p=arr.filter((x,i)=>!usedV.has(tag+i));
+  if(!p.length){[...usedV].filter(k=>k.startsWith(tag)).forEach(k=>usedV.delete(k));p=arr}
+  const it=pick(p);usedV.add(tag+arr.indexOf(it));return it;
+}
+function genAnalogy(L){
+  const it=pickItem(ANA,L,'a');const h=w=>`<span class="w">${w}</span>`;
+  return mkQ({cat:'verbal',sub:'ana',L:Math.max(1,Math.min(5,it.lv+(L>3?1:0))),prompt:'Подберите слово так, чтобы вторая пара была связана так же, как первая.',
+    visual:`<div class="ana">${it.a} <em>:</em> ${it.b} <em>=</em> ${it.c} <em>:</em> <span class="q">?</span></div>`,
+    correct:h(it.d),wrongs:it.w.map(h),cls:'txt',ex:`${it.a} относится к «${it.b}» так же, как ${it.c.toLowerCase()} — к «${it.d}».`,time:qtime('verbal',L)});
+}
+function genOddWord(L){
+  const it=pickItem(ODD,L,'o');const h=w=>`<span class="w">${w}</span>`;
+  return mkQ({cat:'verbal',sub:'odd',L:Math.max(1,Math.min(5,it.lv+(L>3?1:0))),prompt:'Какое слово лишнее?',visual:'',
+    correct:h(it.w[it.i]),wrongs:it.w.filter((_,j)=>j!==it.i).map(h),cls:'txt',ex:it.e,time:qtime('verbal',L)});
+}
+
+// ---------- логика: порядок ----------
+const PEOPLE=[['Аня','Ани'],['Боря','Бори'],['Вера','Веры'],['Гоша','Гоши'],['Даша','Даши'],['Женя','Жени'],['Зоя','Зои'],['Илья','Ильи'],['Катя','Кати'],['Лёва','Лёвы'],['Миша','Миши'],['Нина','Нины'],['Олег','Олега'],['Петя','Пети'],['Соня','Сони'],['Тимур','Тимура']];
+const ATTR=[{m:'выше',l:'ниже',from:'от самого высокого',sign:'выше'},{m:'старше',l:'младше',from:'от самого старшего',sign:'старше'},{m:'бегает быстрее',l:'бегает медленнее',from:'от самого быстрого',sign:'быстрее'},{m:'живёт ближе к школе, чем',l:'живёт дальше от школы, чем',from:'от того, кто живёт ближе всех',sign:'ближе', nom:true}];
+const ORD=['первым','вторым','третьим','четвёртым','пятым'];
+function genOrder(L){
+  const n=L<=3?4:5;const p=shuffle(PEOPLE).slice(0,n);const at=pick(ATTR);
+  const say=(x,y,more)=>at.nom?`${x[0]} ${more?at.m:at.l} ${y[0]}`:`${x[0]} ${more?at.m:at.l} ${y[1]}`;
+  const facts=[];
+  for(let i=0;i<n-1;i++)facts.push(R()<(L>=3?.5:.25)?say(p[i+1],p[i],false):say(p[i],p[i+1],true));
+  if(L>=4){const i=ri(0,n-3),j=ri(i+2,n-1);facts.push(R()<.5?say(p[i],p[j],true):say(p[j],p[i],false))}
+  const k=L===2?pick([0,n-1]):ri(1,n-2);
+  const kText=k===n-1?'последним':ORD[k];
+  return mkQ({cat:'logic',sub:'order',L,prompt:`Кто окажется ${kText}, если выстроить всех по порядку, начиная ${at.from}?`,
+    visual:`<ul class="facts">${shuffle(facts).map(f=>`<li>${f}.</li>`).join('')}</ul>`,
+    correct:`<span class="w">${p[k][0]}</span>`,wrongs:p.filter((_,i)=>i!==k).map(x=>`<span class="w">${x[0]}</span>`),cls:'txt',
+    ex:`Если связать условия в цепочку, получится порядок: ${p.map(x=>x[0]).join(' → ')}. На ${k+1}-м месте — ${p[k][0]}.`,time:qtime('order',L)});
+}
+
+// ---------- логика: силлогизмы ----------
+const NONS=['зуф','крал','мимб','дорн','вельт','шунд','плам','брум','грант','тролп'];
+const SYL=[
+  [['all','A','B'],['all','B','C'],['all','A','C'],'yes',3,'Все A входят в B, а все B — в C, значит, все A входят в C.'],
+  [['all','A','B'],null,['all','B','A'],'unk',3,'Из того, что все A — это B, не следует обратное: среди B могут быть и не-A.'],
+  [['none','A','B'],null,['none','B','A'],'yes',3,'Если никакой A не является B, то и никакой B не является A — группы не пересекаются.'],
+  [['all','A','B'],null,['some','B','A'],'yes',3,'Все A входят в B, а A существуют, значит, некоторые B — это A.'],
+  [['all','A','B'],['some','B','C'],['some','A','C'],'unk',4,'Те B, которые являются C, могут оказаться не из числа A.'],
+  [['none','A','B'],['all','C','A'],['none','C','B'],'yes',4,'Все C входят в A, а A с B не пересекаются, значит, и C с B не пересекаются.'],
+  [['all','A','B'],['some','C','A'],['some','C','B'],'yes',4,'Те C, что являются A, обязательно являются и B.'],
+  [['all','A','B'],['some','A','C'],['some','B','C'],'yes',4,'Те A, что являются C, одновременно являются B.'],
+  [['some','A','B'],['all','B','C'],['some','A','C'],'yes',4,'Те A, что являются B, обязательно являются и C.'],
+  [['all','A','B'],['all','B','C'],['somenot','A','C'],'no',4,'Все A входят в C, поэтому A, которые не C, быть не может.'],
+  [['some','A','B'],['some','B','C'],['some','A','C'],'unk',5,'Общие части A с B и B с C могут не совпадать.'],
+  [['all','A','B'],['none','B','C'],['some','A','C'],'no',5,'Все A — это B, а B с C не пересекаются, значит, ни один A не является C.'],
+  [['all','A','B'],['none','C','A'],['none','C','B'],'unk',5,'C не пересекается с A, но может пересекаться с той частью B, где нет A.'],
+  [['somenot','A','B'],['all','C','B'],['somenot','A','C'],'yes',5,'Те A, что не B, не могут быть C, ведь все C — это B.'],
+  [['all','A','B'],['all','C','B'],['some','A','C'],'unk',5,'A и C обе лежат внутри B, но могут не пересекаться друг с другом.'],
+  [['none','A','B'],['some','C','B'],['somenot','C','A'],'yes',5,'Те C, что являются B, не могут быть A.'],
+  [['all','A','B'],['none','C','B'],['some','C','A'],'no',5,'C не пересекается с B, а все A лежат внутри B, значит, ни один C не является A.'],
+  [['somenot','A','B'],null,['somenot','B','A'],'unk',5,'Из того, что некоторые A не B, ничего не следует о том, все ли B являются A.'],
+];
+function genSyl(L){
+  const pool=SYL.filter(s=>s[4]===Math.min(5,Math.max(3,L)));
+  let t;do t=pick(pool);while(usedV.has('s'+SYL.indexOf(t))&&R()<.9);usedV.add('s'+SYL.indexOf(t));
+  const w=shuffle(NONS).slice(0,3);const M={A:w[0],B:w[1],C:w[2]};
+  const st=([k,x,y])=>{x=M[x];y=M[y];
+    if(k==='all')return `Все ${x}ы — ${y}ы`;
+    if(k==='some')return `Некоторые ${x}ы — ${y}ы`;
+    if(k==='none')return `Ни один ${x} не является ${y}ом`;
+    return `Некоторые ${x}ы — не ${y}ы`;};
+  const opts=['Точно верно','Точно неверно','Нельзя определить'];const map={yes:0,no:1,unk:2};
+  const h=s=>`<span class="w">${s}</span>`;
+  return mkQ({cat:'logic',sub:'syl',L,prompt:'Известно (все названные группы существуют):',
+    visual:`<ul class="facts">${[t[0],t[1]].filter(Boolean).map(s=>`<li>${st(s)}.</li>`).join('')}</ul><p class="prompt" style="margin:12px 0 0">Вывод: «${st(t[2])}». Это…</p>`,
+    correct:h(opts[map[t[3]]]),wrongs:opts.filter((_,i)=>i!==map[t[3]]).map(h),keep:opts.map(h),cls:'txt',ex:`Обозначим группы буквами: A — ${M.A}ы, B — ${M.B}ы, C — ${M.C}ы. ${t[5]}`,time:qtime('syl',L)});
+}
+
+// ---------- логика: значки ----------
+function genSym(L){
+  const[a1,b1,c1]=shuffle(['star','circle','triangle','square','diamond','hexagon']).slice(0,3);
+  const I={A:icon(a1),B:icon(b1),C:icon(c1)};
+  const ex=arr=>arr.map(t=>I[t]||`<span>${t}</span>`).join('');
+  let a,b,c,eqs,q,ans,exs;
+  if(L<=2){a=ri(2,9);b=ri(1,9);c=ri(1,9);eqs=[[['A','+','A','+','A'],3*a],[['A','+','B'],a+b],[['B','+','C'],b+c]];q=['C','+','A'];ans=c+a}
+  else if(L===3){do{a=ri(3,12);b=ri(1,a-1)}while((a+b)%2);c=ri(2,9);eqs=[[['A','+','B'],a+b],[['A','−','B'],a-b],[['B','+','C'],b+c]];q=['A','×','C'];ans=a*c}
+  else if(L===4){a=ri(2,9);b=ri(1,6);c=b+ri(1,6);eqs=[[['A','×','A'],a*a],[['A','+','B','+','B'],a+2*b],[['C','−','B'],c-b]];q=['(','A','+','B',')','×','C'];ans=(a+b)*c}
+  else{a=ri(2,9);b=ri(2,9);c=ri(1,9);eqs=[[['A','+','B','+','C'],a+b+c],[['A','+','B'],a+b],[['B','+','C'],b+c]];q=['A','×','B','−','C'];ans=a*b-c}
+  const vis=`<div class="facts" style="align-items:flex-start">${eqs.map(([e,v])=>`<div class="eq">${ex(e)}<span>=</span><span>${v}</span></div>`).join('')}<div class="eq">${ex(q)}<span>=</span><span class="q" style="padding:0 10px;border-radius:6px">?</span></div></div>`;
+  const cand=[ans+1,ans-1,ans+2,ans-2,a+b+c,a*b,ans+a,ans-c,ans+10].filter((x,i,arr)=>x!==ans&&x>=0&&arr.indexOf(x)===i).slice(0,5);
+  const h=v=>`<span class="n">${v}</span>`;
+  return mkQ({cat:'logic',sub:'sym',L,prompt:'Каждый значок — какое-то число. Чему равно последнее выражение?',visual:vis,
+    correct:h(ans),wrongs:cand.map(h),cls:'num',ex:`${SHN[a1]} = ${a}, ${SHN[b1]} = ${b}, ${SHN[c1]} = ${c}. Ответ: ${ans}.`,time:qtime('sym',L)});
+}
+
+// ---------- логика: задачи ----------
+const WP=[
+  [3,4,()=>{const n=ri(3,7);let b,s;do{b=ri(2,12);s=ri(2,12)}while((b*s)%n||(b===n&&s===n));const ans=b*s/n;
+    return{t:`${n} ${plural(n,'мастер','мастера','мастеров')} делают ${n} ${plural(n,'стул','стула','стульев')} за ${n} ${plural(n,'день','дня','дней')}. Сколько стульев сделают ${b} ${plural(b,'мастер','мастера','мастеров')} за ${s} ${plural(s,'день','дня','дней')}?`,ans,tr:[b*s,Math.max(b,s),b+s],ex:`Один мастер делает 1 стул за ${n} дн. ${b} мастеров за ${s} дн.: ${b}·${s}/${n} = ${ans}.`}}],
+  [3,4,()=>{const per=ri(12,22),f1=ri(3,4),f2=ri(5,9);const S=per*(f1-1),ans=per*(f2-1);
+    return{t:`Чтобы подняться с 1-го на ${f1}-й этаж, нужно пройти ${S} ступенек. Сколько ступенек нужно пройти с 1-го на ${f2}-й этаж?`,ans,tr:[per*f2,Math.round(S*f2/f1),S*2],ex:`Между соседними этажами ${per} ступенек (${S}/${f1-1}). С 1-го на ${f2}-й — ${f2-1} пролётов: ${ans}.`}}],
+  [3,4,()=>{const k=ri(4,10),t=ri(2,6);return{t:`Бревно распилили на ${k} частей. Каждый распил занимает ${t} мин. Сколько минут ушло на всю работу?`,ans:(k-1)*t,tr:[k*t,(k-2)*t,(k+1)*t],ex:`Чтобы получить ${k} частей, нужно ${k-1} распилов: ${(k-1)}·${t} = ${(k-1)*t}.`}}],
+  [3,4,()=>{const d=ri(2,5),n=ri(4,12);const Lm=d*n;return{t:`Вдоль дорожки длиной ${Lm} м ставят столбики через каждые ${d} м, включая оба конца. Сколько столбиков понадобится?`,ans:n+1,tr:[n,n+2,n-1],ex:`Промежутков ${Lm}/${d} = ${n}, столбиков на один больше: ${n+1}.`}}],
+  [4,5,()=>{const b=ri(5,90),Y=ri(50,300);const X=2*b+Y;return{t:`Ручка и блокнот вместе стоят ${X} ₽. Ручка дороже блокнота на ${Y} ₽. Сколько стоит блокнот?`,ans:b,tr:[X-Y,Math.round(X/2),b+Y],ex:`Блокнот x, ручка x + ${Y}: 2x + ${Y} = ${X}, x = ${b}.`}}],
+  [4,5,()=>{let H,a,b,ans,tr;do{H=ri(8,20);a=ri(3,5);b=ri(1,a-1);ans=H<=a?1:Math.ceil((H-a)/(a-b))+1;tr=Math.ceil(H/(a-b))}while(ans===tr||H<=a);
+    return{t:`Улитка ползёт вверх по столбу высотой ${H} м. За день она поднимается на ${a} м, за ночь сползает на ${b} м. На какой день она доберётся до вершины?`,ans,tr:[tr,ans+1,ans-1],ex:`За сутки улитка поднимается на ${a-b} м, но в последний день доползает до вершины, не успев сползти. Ответ: ${ans}-й день.`}}],
+  [4,5,()=>{for(;;){const k=ri(3,6),n=ri(2,15),m=ri(2,k-1);const num=n*(m-1),den=k-m;if(num%den)continue;const B=num/den;if(B<2||B>16||k*B<20||k*B>60)continue;
+    return{t:`Сейчас мама старше дочери в ${k} раза. Через ${n} ${plural(n,'год','года','лет')} мама будет старше дочери в ${m} раза. Сколько лет дочери сейчас?`,ans:B,tr:[B+n,k*B-B,B+1],ex:`Пусть дочери x лет: ${k}x + ${n} = ${m}·(x + ${n}), откуда x = ${B}.`}}}],
+  [5,5,()=>{const n=ri(5,12);return{t:`На встрече ${n} человек. Каждый пожал руку каждому ровно один раз. Сколько было рукопожатий?`,ans:n*(n-1)/2,tr:[n*(n-1),n*n,n*(n+1)/2],ex:`Каждый жмёт руку ${n-1} людям, но так каждое рукопожатие посчитано дважды: ${n}·${n-1}/2 = ${n*(n-1)/2}.`}}],
+  [5,5,()=>{const[a,b,ans]=pick([[3,6,2],[4,12,3],[6,12,4],[10,15,6],[12,24,8],[20,30,12],[6,30,5],[15,30,10]]);return{t:`Первая труба наполняет бассейн за ${a} ч, вторая — за ${b} ч. За сколько часов они наполнят бассейн, если работают вместе?`,ans,tr:[(a+b)/2,a+b,b-a],ex:`За час первая наполняет 1/${a}, вторая 1/${b} бассейна. Вместе — 1/${ans}, значит, ${ans} ч.`}}],
+  [5,5,()=>{const s=ri(3,9),k=ri(2,4);const tot=s*(k+1);return{t:`В классе ${tot} учеников. Девочек в ${k} раза больше, чем мальчиков. Сколько мальчиков?`,ans:s,tr:[Math.round(tot/k),tot-s,s*k],ex:`Мальчиков x, девочек ${k}x, всего ${k+1}x = ${tot}, x = ${s}.`}}],
+];
+function genWord(L){
+  const pool=WP.filter(w=>L>=w[0]&&L<=w[1]);const w=pick(pool.length?pool:WP)[2]();
+  const seen=new Set([w.ans]);const out=[];
+  for(const x of [...w.tr,w.ans+1,w.ans-1,w.ans+2,w.ans*2])if(Number.isInteger(x)&&x>0&&!seen.has(x)&&out.length<4){seen.add(x);out.push(x)}
+  const h=v=>`<span class="n">${v}</span>`;
+  return mkQ({cat:'logic',sub:'word',L,prompt:w.t,visual:'',correct:h(w.ans),wrongs:out.map(h),cls:'num',ex:w.ex,time:qtime('word',L)});
+}
+
+// ---------- диспетчер ----------
+const CATN={matrix:'Узоры',numbers:'Числа',letters:'Буквы',spatial:'Пространство',verbal:'Слова',logic:'Логика'};
+function gen(cat,L,sub){
+  let q;
+  for(let t=0;t<20&&!q;t++){
+    try{
+      if(cat==='matrix')q=sub==='lines'?genOverlay(Math.max(4,L)):genMatrix(L);
+      else if(cat==='numbers')q=genNum(L);
+      else if(cat==='letters')q=genLetters(L);
+      else if(cat==='spatial')q=({rotate:genRotate,odd:genOddFig,net:genNet}[sub]||pick([genRotate,genOddFig,genNet]))(L);
+      else if(cat==='verbal')q=({ana:genAnalogy,odd:genOddWord}[sub]||pick([genAnalogy,genOddWord]))(L);
+      else q=({order:genOrder,syl:genSyl,sym:genSym,word:genWord}[sub]||pick([genOrder,genSyl,genSym,genWord]))(L);
+      if(q&&(q.opts.length<3||q.ans<0||new Set(q.opts).size!==q.opts.length))q=null;
+    }catch(e){q=null}
+  }
+  return q;
+}
+</script>
+
+<script>
+// ================= игра =================
+const HALLS=[
+  {name:'Узоры',sub:'Матрицы 3×3. В каждой строке и столбце работает правило: форма, количество, заливка, размер. Найдите недостающую клетку.',seq:[['matrix',1],['matrix',1],['matrix',2],['matrix',2],['matrix',3]]},
+  {name:'Ряды чисел',sub:'Числа идут по скрытому правилу. Определите следующее число.',seq:[['numbers',1],['numbers',2],['numbers',2],['numbers',3],['numbers',3]]},
+  {name:'Фигуры в уме',sub:'Повороты, зеркальные отражения и развёртки куба. Крутите детали в голове.',seq:[['spatial',2,'rotate'],['spatial',2,'odd'],['spatial',3,'net'],['spatial',3,'rotate'],['spatial',4,'net']]},
+  {name:'Слова',sub:'Аналогии и лишние слова. Ищите, по какому признаку связаны понятия.',seq:[['verbal',1,'ana'],['verbal',1,'odd'],['verbal',2,'ana'],['verbal',2,'odd'],['verbal',3,'ana']]},
+  {name:'Логика',sub:'Порядок по условиям, выводы из утверждений, задачи на смекалку.',seq:[['logic',2,'order'],['logic',3,'syl'],['logic',3,'word'],['logic',4,'order'],['logic',4,'syl']]},
+  {name:'Буквы и знаки',sub:'Буквенные ряды по алфавиту и уравнения, где числа спрятаны за значками.',seq:[['letters',2],['letters',3],['logic',3,'sym'],['letters',4],['logic',4,'sym']]},
+  {name:'Сложные узоры',sub:'Матрицы, где меняются сразу несколько свойств, и наложение линий.',seq:[['matrix',3],['matrix',4],['matrix',4,'lines'],['matrix',5],['matrix',5,'lines']]},
+  {name:'Финал',sub:'Самые трудные задания из всех разделов.',seq:[['numbers',5],['spatial',5],['logic',5,'word'],['letters',5],['matrix',5]]},
+];
+const S={timer:'normal',explain:'end',mode:null,plan:[],i:0,score:0,streak:0,bestStreak:0,log:[],q:null,t0:0,limit:0,raf:0,locked:false,tcat:'matrix',tlvl:2};
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem('8z_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('8z_'+k,JSON.stringify(v))}catch(e){}}};
+S.timer=store.get('timer','normal');S.explain=store.get('explain','end');
+
+function show(id){for(const s of ['home','train','intro','play','result'])$('#'+s).hidden=s!==id;$('#homeBtn').hidden=!(id==='play'||id==='intro');window.scrollTo(0,0)}
+function segHTML(name,opts,cur){return `<div class="seg" role="group">${opts.map(([v,l])=>`<button data-set="${name}" data-v="${v}" aria-pressed="${v===cur}">${l}</button>`).join('')}</div>`}
+
+function renderHome(){
+  const hist=store.get('hist',[]);const best=store.get('best',null);
+  let demo;try{demo=genMatrix(2)}catch(e){}
+  $('#home').innerHTML=`<div class="wrap" style="gap:22px">
+  <div class="hero"><div><div class="eyebrow">Игровой тест на мышление</div><h1>Восемь <span>залов</span></h1>
+  <p>40 заданий: узоры, ряды чисел и букв, фигуры в уме, слова и логика. Сложность растёт от зала к залу, за скорость и серии правильных ответов начисляются очки, в конце — оценка IQ и разбор ошибок.</p></div>
+  <div class="demo">${demo?demo.visual.replace('class="visual"','class="visual" style="display:block"').replace('class="mx"','class="mx" style="width:100%;border:0"'):''}<small>Пример из первого зала</small></div></div>
+  <div class="modes">
+   <button class="mode main" data-go="full"><span class="eyebrow">Основной</span><h3>Полный тест</h3><span class="meta mono">8 залов · 40 заданий · ~25 мин</span><p>Даёт самую точную оценку в этой игре.</p></button>
+   <button class="mode" data-go="express"><span class="eyebrow">Быстро</span><h3>Экспресс</h3><span class="meta mono">8 залов · 16 заданий · ~10 мин</span><p>По два задания из каждого зала.</p></button>
+   <button class="mode" data-go="train"><span class="eyebrow">Без оценки</span><h3>Тренировка</h3><span class="meta mono">бесконечно</span><p>Выберите раздел и сложность, разбор после каждого ответа.</p></button>
+  </div>
+  <div class="panel">
+   <div class="setrow"><span>Таймер</span>${segHTML('timer',[['normal','Обычный'],['soft','Мягкий ×1,5'],['off','Без таймера']],S.timer)}</div>
+   <div class="setrow"><span>Разбор ответов</span>${segHTML('explain',[['end','В конце'],['each','После каждого']],S.explain)}</div>
+   <p class="note">Без таймера оценка считается без бонуса за скорость.</p>
+  </div>
+  <div><div class="eyebrow" style="margin-bottom:8px">Залы</div><div class="halls">${HALLS.map((h,i)=>`<div><span class="mono">${i+1}</span><b>${h.name}</b></div>`).join('')}</div></div>
+  ${hist.length?`<div class="panel"><div class="setrow"><span>Ваши попытки</span>${best?`<span class="mono">лучший IQ: <b>${best}</b></span>`:''}</div><div class="hist">${hist.slice(0,8).map(h=>`<div><span>${h.d} · ${h.m}</span><span class="mono">IQ ${h.iq} · ${h.sc} очк.</span></div>`).join('')}</div></div>`:''}
+  <p class="disc">Это развлекательная игра, а не клинический тест. Задания придуманы для игры и не проходили стандартизацию, поэтому число IQ здесь — грубая прикидка по доле решённых заданий с учётом их сложности. Настоящий IQ измеряет психолог по валидированным методикам.</p>
+  </div>`;
+}
+
+function renderTrain(){
+  const cats=Object.keys(CATN);
+  $('#train').innerHTML=`<div class="wrap"><div><div class="eyebrow">Тренировка</div><h2 style="font-size:30px">Выберите раздел и сложность</h2></div>
+   <div class="panel"><span style="font-weight:600">Раздел</span><div class="picker">${cats.map(c=>`<button data-tcat="${c}" aria-pressed="${c===S.tcat}">${CATN[c]}</button>`).join('')}</div>
+   <span style="font-weight:600">Сложность</span><div class="picker">${[1,2,3,4,5].map(l=>`<button data-tlvl="${l}" aria-pressed="${l===S.tlvl}">${l}</button>`).join('')}</div>
+   <div class="row"><button class="btn" data-go="trainstart">Начать</button><button class="btn ghost" data-go="home">Назад</button></div></div></div>`;
+}
+
+function buildPlan(mode){
+  const plan=[];
+  HALLS.forEach((h,hi)=>{const seq=mode==='express'?[h.seq[1],h.seq[3]]:h.seq;seq.forEach(([cat,L,sub])=>plan.push({cat,L,sub,hall:hi}))});
+  return plan;
+}
+function start(mode){
+  S.mode=mode;S.i=0;S.score=0;S.streak=0;S.bestStreak=0;S.log=[];
+  if(mode==='train'){S.plan=null;nextQ();return}
+  S.plan=buildPlan(mode);showIntro(0);
+}
+function showIntro(h){
+  const H=HALLS[h];const per=S.plan.filter(p=>p.hall===h).length;
+  $('#intro').innerHTML=`<div class="intro"><div class="eyebrow">Зал ${h+1} из 8 · ${per} ${plural(per,'задание','задания','заданий')}</div><div class="num">${String(h+1).padStart(2,'0')}</div><h2>${H.name}</h2><p>${H.sub}</p>
+  ${h>0?`<div class="row mono" style="font-size:14px"><span>Очки: <b>${S.score}</b></span><span>Верно: <b>${S.log.filter(x=>x.ok).length}/${S.log.length}</b></span></div>`:''}
+  <button class="btn" data-go="hall">Войти в зал</button></div>`;
+  show('intro');
+}
+function lvlHTML(L){return `<span class="lvl" title="Сложность ${L} из 5">${[1,2,3,4,5].map(i=>`<i class="${i<=L?'on':''}"></i>`).join('')}</span>`}
+function nextQ(){
+  let spec;
+  if(S.mode==='train')spec={cat:S.tcat,L:S.tlvl};else spec=S.plan[S.i];
+  const q=gen(spec.cat,spec.L,spec.sub);q.hall=spec.hall;q.L=spec.L;
+  S.q=q;S.locked=false;
+  const mult=S.timer==='soft'?1.5:1;S.limit=S.timer==='off'?0:Math.round(q.time*mult);
+  const total=S.plan?S.plan.length:0;
+  const hallDots=S.plan?HALLS.map((_,i)=>`<i class="${i<spec.hall?'done':i===spec.hall?'cur':''}"></i>`).join(''):'';
+  $('#play').innerHTML=`<div class="hud"><div class="hudrow">${S.plan?`<div class="dots" aria-label="Залы">${hallDots}</div><span class="mono" style="font-size:14px">${S.i+1}/${total}</span>`:`<span class="eyebrow">Тренировка · ${CATN[spec.cat]}</span><span class="mono" style="font-size:14px">${S.log.filter(x=>x.ok).length}/${S.log.length}</span>`}
+   <div class="stats"><span>Очки <b id="sc">${S.score}</b></span>${S.streak>=2?`<span class="streak">×${S.streak}</span>`:''}<span class="mono" id="tl">${S.limit?S.limit+' с':'∞'}</span></div></div>
+   <div class="timer" id="tb"${S.limit?'':' hidden'}><i id="tbi"></i></div></div>
+   <div class="qbox"><div class="qmeta"><span class="chip">${S.plan?HALLS[spec.hall].name:CATN[q.cat]}</span>${lvlHTML(q.L)}</div>
+   <div class="prompt">${q.prompt}</div>${q.visual||''}
+   <div class="opts ${q.cls}" id="opts">${q.opts.map((o,i)=>`<button class="opt" data-a="${i}" aria-label="Вариант ${i+1}"><span class="k">${i+1}</span>${o}</button>`).join('')}</div>
+   <div id="fb"></div></div>`;
+  show('play');
+  S.t0=performance.now();cancelAnimationFrame(S.raf);if(S.limit)tick();
+}
+function tick(){
+  const el=(performance.now()-S.t0)/1000;const left=Math.max(0,S.limit-el);
+  const bi=$('#tbi');if(bi){bi.style.transform=`scaleX(${left/S.limit})`;$('#tb').classList.toggle('low',left<8);$('#tl').textContent=Math.ceil(left)+' с'}
+  if(left<=0){answer(-1);return}
+  S.raf=requestAnimationFrame(tick);
+}
+function popup(txt,good){const p=document.createElement('div');p.className='pop '+(good?'g':'b');p.textContent=txt;document.body.appendChild(p);setTimeout(()=>p.remove(),950)}
+function answer(i){
+  if(S.locked)return;S.locked=true;cancelAnimationFrame(S.raf);
+  const q=S.q;const ok=i===q.ans;const el=(performance.now()-S.t0)/1000;
+  const frac=S.limit?Math.max(0,1-el/S.limit):0;
+  let pts=0;
+  if(ok){S.streak++;S.bestStreak=Math.max(S.bestStreak,S.streak);pts=Math.round((100*q.L+frac*50*q.L)*(1+0.1*Math.min(S.streak-1,5)))}else S.streak=0;
+  S.score+=pts;
+  S.log.push({q,pick:i,ok,frac,time:el,hall:q.hall});
+  const opts=$('#opts');opts.classList.add('locked');
+  opts.querySelectorAll('.opt').forEach((b,j)=>{if(j===q.ans)b.classList.add('right');else if(j===i)b.classList.add('wrong')});
+  $('#sc').textContent=S.score;
+  popup(ok?'+'+pts:(i<0?'Время вышло':'Мимо'),ok);
+  const each=S.mode==='train'||S.explain==='each';
+  if(each){
+    $('#fb').innerHTML=`<div class="fb ${ok?'good':'bad'}"><b>${ok?'Верно':(i<0?'Время вышло':'Неверно')}</b><span>${q.ex}</span><div class="row"><button class="btn" data-go="next" id="nextBtn">Дальше</button>${S.mode==='train'?'<button class="btn ghost" data-go="trainmenu">Сменить раздел</button>':''}</div></div>`;
+    $('#nextBtn').focus({preventScroll:true});
+    $('#fb').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }else setTimeout(advance,ok?750:1300);
+}
+function advance(){
+  if(S.mode==='train'){nextQ();return}
+  S.i++;
+  if(S.i>=S.plan.length){finish();return}
+  if(S.plan[S.i].hall!==S.plan[S.i-1].hall)showIntro(S.plan[S.i].hall);else nextQ();
+}
+
+// ---------- итог ----------
+function phi(z){const t=1/(1+.2316419*Math.abs(z));const d=.3989423*Math.exp(-z*z/2);const p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p}
+function calcIQ(){
+  let w=0,got=0,fs=0,nc=0;
+  for(const l of S.log){w+=l.q.L;if(l.ok){got+=l.q.L;fs+=l.frac;nc++}}
+  const p=w?got/w:0;const bonus=S.timer==='off'||!nc?0:.06*(fs/nc)*(nc/S.log.length);
+  const pa=Math.min(1,p+bonus);
+  let iq=Math.round(100+15*(pa-.55)/.17);
+  if(S.mode==='express')iq=Math.round(100+(iq-100)*.92);
+  return Math.max(60,Math.min(150,iq));
+}
+function bandOf(iq){if(iq>=130)return'Очень высокий';if(iq>=120)return'Высокий';if(iq>=110)return'Выше среднего';if(iq>=90)return'Средний';if(iq>=80)return'Ниже среднего';return'Низкий'}
+function bellSVG(iq){
+  const W=320,H=120,x=v=>(v-55)/90*W,y=v=>H-18-Math.exp(-(((v-100)/15)**2)/2)*(H-30);
+  let d=`M0 ${H-18}`;for(let v=55;v<=145;v+=1)d+=` L${x(v).toFixed(1)} ${y(v).toFixed(1)}`;
+  let f=`M0 ${H-18}`;for(let v=55;v<=Math.min(iq,145);v+=1)f+=` L${x(v).toFixed(1)} ${y(v).toFixed(1)}`;f+=` L${x(Math.min(iq,145)).toFixed(1)} ${H-18} Z`;
+  const ticks=[70,85,100,115,130].map(v=>`<text x="${x(v)}" y="${H-3}" text-anchor="middle" class="bellaxis">${v}</text>`).join('');
+  const mx=x(Math.max(55,Math.min(145,iq)));
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Положение результата на кривой нормального распределения"><path d="${f}" class="bellfill"/><path d="${d}" class="bellline"/><line x1="${mx}" y1="8" x2="${mx}" y2="${H-18}" class="bellmark"/><text x="${Math.min(W-20,Math.max(20,mx))}" y="7" text-anchor="middle" class="belltxt" dy="4">${iq}</text>${ticks}</svg>`;
+}
+function finish(){
+  const iq=calcIQ();const pct=Math.round(phi((iq-100)/15)*100);const right=S.log.filter(l=>l.ok).length;
+  const avg=S.log.reduce((a,l)=>a+l.time,0)/S.log.length;
+  const cats={};for(const l of S.log){const c=l.q.cat;cats[c]=cats[c]||[0,0];cats[c][1]++;if(l.ok)cats[c][0]++}
+  const best=store.get('best',0);if(iq>best)store.set('best',iq);
+  const hist=store.get('hist',[]);const dt=new Date();hist.unshift({d:dt.toLocaleDateString('ru-RU'),m:S.mode==='full'?'Полный':'Экспресс',iq,sc:S.score});store.set('hist',hist.slice(0,20));
+  $('#result').innerHTML=`<div class="wrap">
+   <div class="res"><div class="iq"><small>Оценка IQ</small>${iq}</div>
+   <div><span class="band">${bandOf(iq)}</span><p style="margin:10px 0 6px">Это выше, чем примерно у ${pct}% людей, если считать, что IQ распределён нормально (среднее 100, отклонение 15).</p><div class="bell">${bellSVG(iq)}</div></div></div>
+   <div class="tiles"><div class="tile"><span>Верно</span><b>${right}/${S.log.length}</b></div><div class="tile"><span>Очки</span><b>${S.score}</b></div><div class="tile"><span>Лучшая серия</span><b>${S.bestStreak}</b></div><div class="tile"><span>Среднее время</span><b>${avg.toFixed(1)} с</b></div></div>
+   <div class="panel"><span style="font-weight:600">По разделам</span><div class="bars">${Object.keys(CATN).filter(c=>cats[c]).map(c=>`<div class="bar"><span>${CATN[c]}</span><span class="t"><i style="width:${cats[c][0]/cats[c][1]*100}%"></i></span><span class="v">${cats[c][0]}/${cats[c][1]}</span></div>`).join('')}</div></div>
+   <div class="row"><button class="btn" data-go="${S.mode}">Пройти ещё раз</button><button class="btn ghost" data-go="home">На главную</button></div>
+   <div><div class="eyebrow" style="margin-bottom:8px">Разбор всех заданий</div><div class="review">${S.log.map((l,i)=>`<details><summary><span class="mk ${l.ok?'g':'b'}">${l.ok?'✓':'✕'}</span><span class="mono">${i+1}</span><span>${HALLS[l.hall].name}${HALLS[l.hall].name.includes(CATN[l.q.cat])?'':' · '+CATN[l.q.cat]}</span>${lvlHTML(l.q.L)}</summary><div class="body"><div class="prompt" style="font-size:16px">${l.q.prompt}</div>${l.q.visual||''}<div class="ans"><span>Правильно:</span><span class="opt right">${l.q.opts[l.q.ans]}</span>${!l.ok?(l.pick<0?'<span>(время вышло)</span>':`<span>Ваш ответ:</span><span class="opt wrong">${l.q.opts[l.pick]}</span>`):''}</div><p style="margin:0">${l.q.ex}</p></div></details>`).join('')}</div></div>
+   <p class="disc">Оценка развлекательная. Задания не стандартизированы на выборке людей, поэтому число нельзя сравнивать с результатом настоящего IQ-теста. Разные попытки дают разные задания, и результат может заметно колебаться.</p>
+  </div>`;
+  show('result');
+}
+
+// ---------- события ----------
+let quitArm=0;
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.set){S[b.dataset.set]=b.dataset.v;store.set(b.dataset.set,b.dataset.v);b.parentNode.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
+  if(b.dataset.tcat){S.tcat=b.dataset.tcat;renderTrain();return}
+  if(b.dataset.tlvl){S.tlvl=+b.dataset.tlvl;renderTrain();return}
+  if(b.dataset.a!==undefined){answer(+b.dataset.a);return}
+  if(b.id==='homeBtn'){
+    if(Date.now()-quitArm<3000){cancelAnimationFrame(S.raf);S.locked=true;quitArm=0;b.textContent='Прервать';renderHome();show('home');return}
+    quitArm=Date.now();b.textContent='Точно выйти?';setTimeout(()=>{b.textContent='Прервать'},3000);return;
+  }
+  const g=b.dataset.go;if(!g)return;
+  if(g==='full'||g==='express')start(g);
+  else if(g==='train'||g==='trainmenu'){cancelAnimationFrame(S.raf);renderTrain();show('train')}
+  else if(g==='trainstart')start('train');
+  else if(g==='home'){renderHome();show('home')}
+  else if(g==='hall')nextQ();
+  else if(g==='next')advance();
+});
+document.addEventListener('keydown',e=>{
+  if($('#play').hidden)return;
+  if(/^[1-6]$/.test(e.key)&&!S.locked){const i=+e.key-1;if(S.q&&i<S.q.opts.length)answer(i)}
+  else if(e.key==='Enter'&&S.locked&&$('#nextBtn')){e.preventDefault();advance()}
+});
+renderHome();show('home');
+</script>
